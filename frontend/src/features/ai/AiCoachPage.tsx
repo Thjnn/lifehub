@@ -37,7 +37,11 @@ export function AiCoachPage() {
         })) ?? []))
   const activeConversation = conversationId === null ? undefined : (conversationId ?? latest.data?.conversation_id)
 
-  useEffect(() => bottom.current?.scrollIntoView({ behavior: 'smooth', block: 'end' }), [history.length, send.isPending])
+  // Block body on purpose: newer browsers return a Promise from scrollIntoView, and an effect must return
+  // nothing or a cleanup function — returning the Promise crashed the app on navigation ("l is not a function").
+  useEffect(() => {
+    bottom.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
+  }, [history.length, send.isPending])
 
   async function ask(message: string) {
     const text = message.trim()
