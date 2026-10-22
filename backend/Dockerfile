@@ -9,8 +9,11 @@ RUN composer install --no-dev --no-scripts --no-autoloader --prefer-dist --no-in
 # 2. Runtime
 FROM dunglas/frankenphp:1-php8.3
 
+# The base image grants frankenphp cap_net_bind_service (to bind :80/:443). Render drops capabilities, so exec
+# of a binary carrying file caps fails with EPERM (exit 126). We only bind $PORT (>1024): remove the cap.
 RUN install-php-extensions pdo_pgsql opcache intl zip bcmath \
-    && cp "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"
+    && cp "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini" \
+    && setcap -r /usr/local/bin/frankenphp
 
 COPY docker/php.ini "$PHP_INI_DIR/conf.d/zz-app.ini"
 
