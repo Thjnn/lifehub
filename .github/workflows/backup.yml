@@ -1,0 +1,38 @@
+name: Backup
+
+# Weekly pg_dump of Supabase (free tier has no downloadable backups), kept as a workflow artifact.
+# The repo is public, so the dump is encrypted before upload: artifacts of public repos can be downloaded.
+# Restore: gpg --decrypt lifehub-*.dump.gpg > lifehub.dump && pg_restore --no-owner -d "$DATABASE_URL" lifehub.dump
+on:
+  schedule:
+    - cron: '0 19 * * 0' # Monday 02:00 Vietnam time
+  workflow_dispatch:
+
+jobs:
+  dump:
+    runs-on: ubuntu-latest
+    # Repo secrets (Settings → Secrets and variables → Actions):
+    #   SUPABASE_DB_URL   — Supabase "Session pooler" connection string (runners have no IPv6 for the direct one)
+    #   BACKUP_PASSPHRASE — long random passphrase, kept in your password manager; without it the dump is useless
+    # Skipped until both exist.
+    env:
+      SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+      BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+    steps:
+      - name: Dump and encrypt
+        if: env.SUPABASE_DB_URL != '' && env.BACKUP_PASSPHRASE != ''
+        run: |
+          set -o pipefail
+          file="lifehub-$(date -u +%F).dump.gpg"
+          # pg_dump must be at least the server's major version; the image pins it.
+          docker run --rm -e PGURL="$SUPABASE_DB_URL" postgres:17 \
+            sh -c 'pg_dump --format=custom --no-owner --no-privileges --schema=public "$PGURL"' \
+            | gpg --batch --yes --symmetric --cipher-algo AES256 --passphrase-fd 3 3<<<"$BACKUP_PASSPHRASE" -o "$file"
+          test -s "$file"
+          echo "FILE=$file" >> "$GITHUB_ENV"
+      - uses: actions/upload-artifact@v4
+        if: env.FILE != ''
+        with:
+          name: ${{ env.FILE }}
+          path: ${{ env.FILE }}
+          retention-days: 30
