@@ -430,10 +430,11 @@ lifehub/
 | **5. Tasks + Calendar** | CRUD, filter, calendar views, recurring cơ bản, test policy | Quản lý việc và lịch |
 | **6. Finance** | Accounts, categories, transactions, budgets, reports, test số dư/transfer | Tài chính chạy đúng |
 | **7. Offline mức 3** | Dexie outbox, UUID client, upsert idempotent, sync + xử lý lỗi cho Tasks/Transactions | Ghi offline rồi tự đồng bộ |
-| **8. Dashboard + AI** | Dashboard tổng hợp, Gemini qua backend, briefing, chat, proposals, rate limit | AI trả lời từ dữ liệu thật |
+| **8. Dashboard + AI** | Dashboard tổng hợp, Gemini qua backend, briefing, chat, proposals, rate limit; **thời tiết** (Open-Meteo, thành phố chọn trong Settings) và **địa điểm sự kiện + nút "Mở bản đồ"** | AI trả lời từ dữ liệu thật |
 | **9. QA & Release** | Test, accessibility, responsive, seed demo, README, API docs, backup workflow, rà soát bảo mật | MVP demo được, đưa vào portfolio |
-| **10. Nutrition + Food scan** *(v2, ngay sau MVP)* | `foods` (seed món Việt), `food_entries`, nhật ký ăn uống; quét món bằng camera qua Gemini (chi tiết mục 15.1) | Chụp món → xác nhận → ghi nhật ký calo |
-| **11. Nhắc hạn chót (Web Push)** *(v2, sau Phase 10)* | Push subscription, VAPID, GitHub Actions cron 2 lần/ngày, service worker nhận push, bật/tắt trong Settings (chi tiết mục 15.2) | Nhận thông báo việc sắp đến hạn |
+| **10. Ghi chú** *(v2, ngay sau MVP)* | Ghi chú chữ (tiêu đề, ghim, tìm kiếm), gắn vào task/sự kiện, ghi offline qua outbox (chi tiết mục 15.3) | Ghi chú nhanh, dùng được khi offline |
+| **11. Dinh dưỡng & Tập luyện** *(v2)* | `foods` (seed món Việt), `food_entries`, nhật ký ăn uống; quét món bằng camera qua Gemini (mục 15.1); mục tiêu calo/protein, thực đơn tuần do AI đề xuất theo ngân sách, lịch tập gym (mục 15.4) | Chụp món, thực đơn kiêng, lịch tập |
+| **12. Nhắc hạn chót (Web Push)** *(v2, sau Phase 11)* | Push subscription, VAPID, GitHub Actions cron 2 lần/ngày, service worker nhận push, bật/tắt trong Settings (chi tiết mục 15.2) | Nhận thông báo việc sắp đến hạn |
 
 ---
 
@@ -473,7 +474,7 @@ lifehub/
 ## 15. Để sau (v2+)
 Habits & Goals · Fitness (workout, sets, body measurements) · Nutrition (food diary, meal plans, macro) · Savings goals · Recurring transactions tự động · Import CSV · Google Calendar sync · Push notifications · Nhận diện món ăn bằng ảnh · Widget dashboard tùy chỉnh · Đa tiền tệ · Gamification · Trả góp theo từng món cho tài khoản trả sau (tự chia kỳ, "Cần trả" = tổng các kỳ đến hạn; **chờ người dùng xác nhận quy tắc kỳ đầu / ngày chốt sao kê**).
 
-### 15.1. Nutrition + Food scan (Phase 10 — làm đầu tiên sau MVP)
+### 15.1. Nutrition + Food scan (thuộc Phase 11)
 Làm sau Phase 8 vì tái sử dụng Gemini client, rate limit và `ai_action_proposals`.
 
 - **Chụp ảnh:** `<input type="file" accept="image/*" capture="environment">` (camera native, không thêm thư viện). Resize/nén phía client (~1024px, JPEG) trước khi gửi.
@@ -519,7 +520,7 @@ Làm sau Phase 8 vì tái sử dụng Gemini client, rate limit và `ai_action_p
 ### Bắt đầu
 Bắt đầu từ **Phase 1 — Foundation**: đề xuất cấu trúc monorepo, `docker-compose.yml`, Dockerfile dev cho Laravel, cấu hình `pgsql`, khởi tạo Vite + React + TS + Tailwind + shadcn/ui với design tokens ở mục 7, và README hướng dẫn chạy.
 
-### 15.2. Nhắc hạn chót bằng Web Push (Phase 11)
+### 15.2. Nhắc hạn chót bằng Web Push (Phase 12)
 Trong lúc chưa có, Dashboard (Phase 8) hiển thị việc sắp đến hạn / quá hạn mỗi khi mở app.
 
 - **Quy tắc nhắc:** task chưa xong (`todo`, `in_progress`) có `due_at` trong **3 ngày tới**, nhắc **2 lần/ngày lúc 08:00 và 20:00** theo timezone của user. Mỗi lần gửi **1 thông báo gộp** ("Bạn có 3 việc sắp đến hạn: …"), không gửi từng task.
@@ -528,3 +529,21 @@ Trong lúc chưa có, Dashboard (Phase 8) hiển thị việc sắp đến hạn
 - **Frontend:** chuyển `vite-plugin-pwa` sang `injectManifest` để có service worker tự viết xử lý `push` và `notificationclick` (mở `/app/tasks?view=upcoming`).
 - **Giới hạn:** iOS chỉ nhận push khi đã cài PWA vào màn hình chính (iOS 16.4+). GitHub cron có thể trễ 5–30 phút hoặc bỏ lượt khi quá tải.
 - **Tiêu chí nghiệm thu:** bật/tắt được; nhận đúng 1 thông báo gộp mỗi lượt; không gửi cho task đã xong/huỷ; endpoint cron từ chối khi thiếu secret; có test cho truy vấn chọn task và cho xác thực secret.
+
+### 15.3. Ghi chú (Phase 10)
+- Bảng `notes`: id (UUID do client sinh, như tasks), user_id, title?, body (text), pinned, task_id?/event_id? (gắn tuỳ chọn), timestamps, deleted_at.
+- Ghi offline qua outbox (Phase 7) với PUT upsert idempotent + last-write-wins như Task.
+- Tìm kiếm theo tiêu đề/nội dung; ghim lên đầu; mở từ task/sự kiện được gắn.
+
+### 15.4. Dinh dưỡng & Tập luyện (Phase 11)
+- Hồ sơ: mục tiêu (giảm mỡ / tăng cơ / giữ cân), cân nặng, chiều cao, tuổi, giới tính, số buổi tập/tuần.
+- Calo & protein mục tiêu tính bằng công thức (Mifflin-St Jeor × hệ số vận động ± điều chỉnh theo mục tiêu) — không dùng AI cho phép tính.
+- Thực đơn tuần: Gemini đề xuất món Việt khớp calo/protein **và ngân sách ăn uống** còn lại (lấy từ Finance) → `ai_action_proposals` → người dùng xác nhận mới lưu.
+- Lịch tập: buổi tập là event loại `workout` (đã có), thêm bài tập/set/số đo theo schema v2 (`exercises`, `workouts`, `workout_sets`, `body_measurements`).
+- Hiển thị rõ: gợi ý chỉ để tham khảo, không thay tư vấn dinh dưỡng/y tế.
+
+### 15.5. Thời tiết & địa điểm (thuộc Phase 8)
+- Thời tiết: Open-Meteo (miễn phí, không cần key; chỉ dùng phi thương mại). Vị trí = thành phố người dùng chọn trong Settings (không xin quyền định vị; header `Permissions-Policy` vẫn chặn geolocation). Gọi từ backend, cache theo giờ.
+- AI briefing dùng thời tiết (ví dụ: mưa giờ có sự kiện tập ngoài trời).
+- Sự kiện có trường `location` (text) + nút "Mở bản đồ" mở Google Maps/Apple Maps bằng URL — không dùng Maps API (Google Maps API yêu cầu thẻ thanh toán).
+- Bản đồ trong app (OpenStreetMap) để v2 khi có nhu cầu rõ.
