@@ -144,7 +144,7 @@ export function CalendarPage() {
               : { left: 'prev,next', center: 'title', right: 'today' }
           }
           footerToolbar={isDesktop ? undefined : { center: 'timeGridDay,timeGridWeek,dayGridMonth,listWeek' }}
-          buttonText={{ list: 'Agenda' }}
+          buttonText={{ list: 'Danh sách' }}
           height={isDesktop ? 'calc(100dvh - 15rem)' : 'auto'}
           allDaySlot={false}
           nowIndicator
