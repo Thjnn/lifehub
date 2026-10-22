@@ -17,6 +17,7 @@ import { ReportsPage } from '@/features/finance/ReportsPage'
 import { TransactionsPage } from '@/features/finance/TransactionsPage'
 import { LandingPage } from '@/features/landing/LandingPage'
 import { PreferencesPage } from '@/features/settings/PreferencesPage'
+import { PrivacyPage } from '@/features/settings/PrivacyPage'
 import { TasksPage } from '@/features/tasks/TasksPage'
 import { AppLayout } from '@/layouts/AppLayout'
 import { AuthLayout } from '@/layouts/AuthLayout'
@@ -85,7 +86,7 @@ export const router = createBrowserRouter([
           { index: true, element: <Navigate to="profile" replace /> },
           page('profile', 'Hồ sơ'),
           { path: 'preferences', element: <PreferencesPage />, handle: { title: 'Tùy chọn' } },
-          page('privacy', 'Quyền riêng tư'),
+          { path: 'privacy', element: <PrivacyPage />, handle: { title: 'Quyền riêng tư' } },
         ],
       },
     ],
