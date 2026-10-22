@@ -24,7 +24,9 @@ docker compose up -d db                 # start Postgres (repo root)
 # backend/
 php artisan serve                       # API at http://localhost:8000
 php artisan migrate                     # against Docker Postgres
-composer test                           # config:clear + full test suite
+composer test                           # config:clear + full test suite (SQLite in-memory)
+# same suite on Postgres (create the db once: docker exec lifehub-db psql -U lifehub -c "create database lifehub_test")
+DB_CONNECTION=pgsql DB_DATABASE=lifehub_test DB_PORT=5433 vendor/bin/phpunit
 php artisan test --filter=SomeTest      # single test class/method
 vendor/bin/pint                         # format (Laravel Pint)
 
