@@ -1,5 +1,6 @@
+import { useQuery } from '@tanstack/react-query'
 import { LogOut, Plus, Search, Settings } from 'lucide-react'
-import { Link } from 'react-router'
+import { Link, useNavigate } from 'react-router'
 import { toast } from 'sonner'
 import { NetworkStatus } from '@/components/shared/NetworkStatus'
 import { QuickCreate } from '@/components/shared/QuickCreate'
@@ -9,13 +10,31 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { logout, meQuery } from '@/features/auth/api'
 import { usePageTitle } from '@/hooks/use-page-title'
+
+// "Nguyễn Văn Minh" → "VM"
+const initials = (name: string) =>
+  name
+    .trim()
+    .split(/\s+/)
+    .slice(-2)
+    .map((word) => word[0]?.toUpperCase())
+    .join('')
 
 export function Topbar() {
   const title = usePageTitle()
+  const navigate = useNavigate()
+  const { data: user } = useQuery(meQuery)
+
+  async function handleLogout() {
+    await logout()
+    navigate('/login', { replace: true })
+  }
 
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b bg-background/85 px-4 backdrop-blur lg:px-8">
@@ -44,11 +63,20 @@ export function Topbar() {
           <DropdownMenuTrigger asChild>
             <button type="button" aria-label="Tài khoản" className="rounded-full">
               <Avatar>
-                <AvatarFallback>LH</AvatarFallback>
+                <AvatarFallback>{user ? initials(user.name) : '…'}</AvatarFallback>
               </Avatar>
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-44">
+          <DropdownMenuContent align="end" className="w-56">
+            {user && (
+              <>
+                <DropdownMenuLabel className="flex flex-col">
+                  <span className="truncate text-foreground">{user.name}</span>
+                  <span className="truncate font-normal text-muted-foreground">{user.email}</span>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+              </>
+            )}
             <DropdownMenuItem asChild>
               <Link to="/app/settings/profile">
                 <Settings />
@@ -56,8 +84,7 @@ export function Topbar() {
               </Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            {/* Logout wiring comes with auth in Phase 2 */}
-            <DropdownMenuItem disabled>
+            <DropdownMenuItem onSelect={handleLogout}>
               <LogOut />
               Đăng xuất
             </DropdownMenuItem>

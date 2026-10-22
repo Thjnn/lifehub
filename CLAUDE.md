@@ -30,6 +30,7 @@ vendor/bin/pint                         # format (Laravel Pint)
 # frontend/
 npm run dev                             # http://localhost:5173 (service worker disabled in dev)
 npm run lint                            # oxlint (not ESLint)
+npm test                                # vitest (jsdom); single file: npx vitest run src/lib/api-client.test.ts
 npm run build                           # tsc -b + vite build + generates sw.js
 npm run preview                         # test PWA install/offline against the build
 npm run generate-pwa-assets             # regenerate public/icons/* from public/icons/logo.svg
@@ -43,7 +44,8 @@ Tests run on **SQLite in-memory** (`backend/phpunit.xml`), not Postgres. Postgre
 ## Architecture rules (from spec)
 
 - **Modular monolith.** Thin controllers in `app/Http/Controllers/Api/V1/`; Form Requests for validation, Policies for authorization, API Resources for output (`{ data, meta }`), domain logic in `app/Services/{Planning,Finance,Ai}/` or `app/Actions/`.
-- **Auth:** Sanctum personal access tokens (Bearer), not SPA cookies — frontend and backend are cross-site. CORS allows only the Vercel origin + `localhost:5173`.
+- **Auth:** Sanctum personal access tokens (Bearer), not SPA cookies — frontend and backend are cross-site. Tokens expire after 30 days (`config/sanctum.php`); password reset revokes all tokens. CORS and reset-email links both use `FRONTEND_URL` (`config('app.frontend_url')`). Auth routes are `throttle:6,1`. A `user_settings` row is created by the `User::created` hook (so seeders must not use `WithoutModelEvents`).
+- **Frontend auth flow:** `src/lib/api-client.ts` (`api()` fetch wrapper, `tokenStore`, `ApiError`, slow-request tracking for the "waking server" banner). Route guards are React Router loaders in `src/app/router.tsx` (`requireAuth` uses `queryClient.ensureQueryData(meQuery)`); mid-session 401s are handled in the `QueryCache` `onError` in `src/app/query-client.ts`. Forms: React Hook Form + Zod via the local `zodResolver` in `src/lib/form.ts` (`@hookform/resolvers` currently fails to install due to an upstream peer conflict) and `applyServerErrors` to map Laravel 422s onto fields.
 - **Ownership:** every query scoped to `auth()->id()`; never trust IDs from the client; Policies on every resource, with tests proving users can't see each other's data.
 - **Render free-tier constraints:** no queue worker or scheduler (`QUEUE_CONNECTION=sync`; periodic jobs = GitHub Actions cron hitting a secret-protected endpoint), no persistent disk (log to stderr, files to Supabase Storage), cold starts of 30–60s. Supabase via Supavisor pooler, `sslmode=require`.
 - **Schema conventions:** `timestampTz` (UTC), money `NUMERIC(15,2)`, enums as `VARCHAR` + CHECK / PHP enums (no native Postgres enums), `JSONB` for JSON. `tasks` and `transactions` use **client-generated UUID** PKs with soft deletes and are written via idempotent `PUT /{uuid}` upserts (offline outbox sync).
