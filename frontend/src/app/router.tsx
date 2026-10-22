@@ -9,6 +9,9 @@ import { LoginPage } from '@/features/auth/LoginPage'
 import { RegisterPage } from '@/features/auth/RegisterPage'
 import { ResetPasswordPage } from '@/features/auth/ResetPasswordPage'
 import { AccountsPage } from '@/features/finance/AccountsPage'
+import { BudgetsPage } from '@/features/finance/BudgetsPage'
+import { FinanceOverviewPage } from '@/features/finance/FinanceOverviewPage'
+import { ReportsPage } from '@/features/finance/ReportsPage'
 import { TransactionsPage } from '@/features/finance/TransactionsPage'
 import { LandingPage } from '@/features/landing/LandingPage'
 import { TasksPage } from '@/features/tasks/TasksPage'
@@ -65,11 +68,11 @@ export const router = createBrowserRouter([
       {
         path: 'finance',
         children: [
-          { index: true, element: <ComingSoon />, handle: { title: 'Tài chính' } },
+          { index: true, element: <FinanceOverviewPage />, handle: { title: 'Tài chính' } },
           { path: 'transactions', element: <TransactionsPage />, handle: { title: 'Giao dịch' } },
           { path: 'accounts', element: <AccountsPage />, handle: { title: 'Tài khoản' } },
-          page('budgets', 'Ngân sách'),
-          page('reports', 'Báo cáo'),
+          { path: 'budgets', element: <BudgetsPage />, handle: { title: 'Ngân sách' } },
+          { path: 'reports', element: <ReportsPage />, handle: { title: 'Báo cáo' } },
         ],
       },
       page('ai-coach', 'AI Coach'),

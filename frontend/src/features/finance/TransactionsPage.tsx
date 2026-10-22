@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
-import { ChevronLeft, ChevronRight, Plus, ReceiptText, RotateCw, WifiOff } from 'lucide-react'
+import { Plus, ReceiptText, RotateCw, WifiOff } from 'lucide-react'
 import { Link, useSearchParams } from 'react-router'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -15,9 +15,10 @@ import {
 } from '@/features/finance/api'
 import { CategoryIcon } from '@/features/finance/CategoryIcon'
 import { transactionTypeOptions } from '@/features/finance/labels'
+import { MonthSwitcher } from '@/features/finance/MonthSwitcher'
 import { TransactionFormSheet } from '@/features/finance/TransactionFormSheet'
 import { useOnlineStatus } from '@/hooks/use-online-status'
-import { formatDayHeader, formatMonth, monthKey, shiftMonth } from '@/lib/format'
+import { formatDayHeader, formatMonth, monthKey } from '@/lib/format'
 import { formatVnd } from '@/lib/money'
 import { cn } from '@/lib/utils'
 
@@ -65,21 +66,7 @@ export function TransactionsPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between gap-2">
-        <Button variant="ghost" size="icon" aria-label="Tháng trước" onClick={() => setParam('month', shiftMonth(month, -1))}>
-          <ChevronLeft />
-        </Button>
-        <span className="font-semibold">{formatMonth(month)}</span>
-        <Button
-          variant="ghost"
-          size="icon"
-          aria-label="Tháng sau"
-          disabled={month >= thisMonth}
-          onClick={() => setParam('month', shiftMonth(month, 1))}
-        >
-          <ChevronRight />
-        </Button>
-      </div>
+      <MonthSwitcher month={month} max={thisMonth} onChange={(m) => setParam('month', m)} />
 
       <div className="flex flex-wrap items-center gap-2">
         <FilterSelect

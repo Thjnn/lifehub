@@ -7,11 +7,11 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Finance\UpsertTransactionRequest;
 use App\Http\Resources\TransactionResource;
 use App\Models\Transaction;
+use App\Services\Finance\MonthRange;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 
@@ -29,11 +29,8 @@ class TransactionController extends Controller
 
         $transactions = $request->user()->transactions()
             ->when($data['month'] ?? null, function ($q, $month) use ($request) {
-                // Month boundaries in the user's timezone, compared in UTC.
-                $timezone = $request->user()->settings?->timezone ?? config('app.timezone');
-                $start = Carbon::createFromFormat('Y-m-d H:i:s', "{$month}-01 00:00:00", $timezone);
-                $q->where('occurred_at', '>=', $start->copy()->utc())
-                    ->where('occurred_at', '<', $start->copy()->addMonth()->utc());
+                $range = MonthRange::for($request->user(), $month);
+                $q->where('occurred_at', '>=', $range->start)->where('occurred_at', '<', $range->end);
             })
             // An account's history includes transfers into it.
             ->when($data['account_id'] ?? null, fn ($q, $id) => $q->where(fn ($q) => $q->where('account_id', $id)->orWhere('to_account_id', $id)))

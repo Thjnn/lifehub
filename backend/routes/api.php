@@ -3,8 +3,10 @@
 use App\Http\Controllers\Api\V1\AccountController;
 use App\Http\Controllers\Api\V1\Auth\AuthController;
 use App\Http\Controllers\Api\V1\Auth\PasswordResetController;
+use App\Http\Controllers\Api\V1\BudgetController;
 use App\Http\Controllers\Api\V1\CategoryController;
 use App\Http\Controllers\Api\V1\EventController;
+use App\Http\Controllers\Api\V1\FinanceReportController;
 use App\Http\Controllers\Api\V1\TaskController;
 use App\Http\Controllers\Api\V1\TransactionController;
 use App\Http\Resources\UserResource;
@@ -59,5 +61,12 @@ Route::prefix('v1')->group(function () {
         Route::get('/transactions', [TransactionController::class, 'index']);
         Route::put('/transactions/{id}', [TransactionController::class, 'upsert'])->whereUuid('id');
         Route::delete('/transactions/{transaction}', [TransactionController::class, 'destroy'])->whereUuid('transaction');
+
+        Route::get('/budgets', [BudgetController::class, 'index']);
+        Route::post('/budgets', [BudgetController::class, 'store']);
+        Route::patch('/budgets/{budget}', [BudgetController::class, 'update'])->whereNumber('budget');
+        Route::delete('/budgets/{budget}', [BudgetController::class, 'destroy'])->whereNumber('budget');
+
+        Route::get('/reports/finance', FinanceReportController::class);
     });
 });

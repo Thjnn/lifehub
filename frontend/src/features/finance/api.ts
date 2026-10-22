@@ -51,6 +51,8 @@ export const financeKeys = {
   accounts: ['accounts'] as const,
   categories: ['categories'] as const,
   transactions: ['transactions'] as const,
+  budgets: ['budgets'] as const,
+  reports: ['reports'] as const,
 }
 
 export const accountsQuery = queryOptions({
@@ -72,14 +74,15 @@ export const transactionsQuery = (filters: TransactionFilters) =>
     getNextPageParam: (last) => (last.meta.current_page < last.meta.last_page ? last.meta.current_page + 1 : undefined),
   })
 
-// Any money movement changes balances, so transactions and accounts refresh together.
+// Any money movement changes balances, budget spending and reports, so they refresh together.
 function useInvalidateMoney() {
   const queryClient = useQueryClient()
   return () =>
-    Promise.all([
-      queryClient.invalidateQueries({ queryKey: financeKeys.transactions }),
-      queryClient.invalidateQueries({ queryKey: financeKeys.accounts }),
-    ])
+    Promise.all(
+      [financeKeys.transactions, financeKeys.accounts, financeKeys.budgets, financeKeys.reports].map((queryKey) =>
+        queryClient.invalidateQueries({ queryKey }),
+      ),
+    )
 }
 
 export function useSaveTransaction() {
@@ -134,3 +137,53 @@ export function useDeleteCategory() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: financeKeys.categories }),
   })
 }
+
+// spent/remaining are computed by the API for the budget's month; percent is a whole number (110 = over by 10%).
+export type Budget = {
+  id: number
+  category_id: number | null // null = overall budget
+  period_start: string
+  period_end: string
+  amount: string
+  spent: string
+  remaining: string
+  percent: number
+}
+
+export const budgetsQuery = (month: string) =>
+  queryOptions({
+    queryKey: [...financeKeys.budgets, month],
+    queryFn: async () => (await api<{ data: Budget[] }>(`/budgets?month=${month}`)).data,
+  })
+
+export function useSaveBudget() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, input }: { id?: number; input: { month?: string; category_id?: number | null; amount: string } }) =>
+      api<{ data: Budget }>(id ? `/budgets/${id}` : '/budgets', { method: id ? 'PATCH' : 'POST', body: input }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: financeKeys.budgets }),
+  })
+}
+
+export function useDeleteBudget() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) => api<void>(`/budgets/${id}`, { method: 'DELETE' }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: financeKeys.budgets }),
+  })
+}
+
+export type FinanceReport = {
+  month: string
+  income: string
+  expense: string
+  net: string
+  previous: { income: string; expense: string }
+  by_category: { category_id: number | null; amount: string }[]
+}
+
+export const reportQuery = (month: string) =>
+  queryOptions({
+    queryKey: [...financeKeys.reports, month],
+    queryFn: async () => (await api<{ data: FinanceReport }>(`/reports/finance?month=${month}`)).data,
+  })
