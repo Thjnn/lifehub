@@ -52,12 +52,22 @@ class TaskController extends Controller
             Gate::authorize('update', $task);
             // Edited offline after being deleted elsewhere: report a conflict instead of resurrecting it.
             abort_if($task->trashed(), 409, 'Công việc này đã bị xoá.');
+
+            // Last-write-wins (spec §6.3): an offline edit made before the server's latest change loses.
+            // The client can resend without client_updated_at to overwrite on purpose.
+            $editedAt = $request->validated('client_updated_at');
+            if ($editedAt && $task->updated_at->gt(Carbon::parse($editedAt))) {
+                return response()->json([
+                    'message' => 'Công việc đã được sửa ở nơi khác sau thay đổi này.',
+                    'data' => new TaskResource($task),
+                ], 409);
+            }
         } else {
             $task = $request->user()->tasks()->make();
             $task->id = $id;
         }
 
-        $task->fill($request->validated())->save();
+        $task->fill($request->safe()->except('client_updated_at'))->save();
 
         return (new TaskResource($task))
             ->response()

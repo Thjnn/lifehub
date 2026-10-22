@@ -22,7 +22,8 @@ const storedQueryKeys = () => {
   return raw ? JSON.parse(raw).clientState.queries.map((q: { queryKey: unknown }) => q.queryKey) : []
 }
 
-beforeEach(() => vi.useFakeTimers())
+// Only timers the persister throttles with; fake-indexeddb (Dexie outbox) needs real setImmediate.
+beforeEach(() => vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'Date'] }))
 afterEach(() => {
   vi.useRealTimers()
   vi.unstubAllGlobals()

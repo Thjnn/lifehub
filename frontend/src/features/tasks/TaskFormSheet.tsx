@@ -82,11 +82,13 @@ function TaskForm({ task, onDone }: { task?: Task; onDone: () => void }) {
 
   const onSubmit = handleSubmit(async ({ due, description, ...values }) => {
     try {
-      await saveTask.mutateAsync({
+      const { queued } = await saveTask.mutateAsync({
         id: task?.id ?? crypto.randomUUID(),
+        created: !task,
         input: { ...values, description: description.trim() || null, due_at: fromDateTimeLocal(due) },
       })
-      toast.success(task ? 'Đã lưu thay đổi' : 'Đã thêm công việc')
+      if (queued) toast.info('Đã lưu trên máy — sẽ tự đồng bộ khi có mạng')
+      else toast.success(task ? 'Đã lưu thay đổi' : 'Đã thêm công việc')
       onDone()
     } catch (error) {
       applyServerErrors(error, setError)
@@ -105,7 +107,11 @@ function TaskForm({ task, onDone }: { task?: Task; onDone: () => void }) {
 
   return (
     <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4 px-4 pb-6">
-      {!online && <FormError message="Bạn đang offline. Cần có mạng để lưu (ghi offline sẽ có ở bản sau)." />}
+      {!online && (
+        <p className="rounded-lg border bg-accent/50 p-3 text-sm text-muted-foreground">
+          Bạn đang offline. Thay đổi được lưu trên máy và tự đồng bộ khi có mạng (xoá cần có mạng).
+        </p>
+      )}
       <FormError message={errors.root?.message} />
       <TextField label="Tên công việc" autoFocus={!task} error={errors.title?.message} {...register('title')} />
       <Field data-invalid={!!errors.description}>
@@ -132,7 +138,7 @@ function TaskForm({ task, onDone }: { task?: Task; onDone: () => void }) {
       </div>
       <TextField label="Hạn chót" type="datetime-local" error={errors.due?.message} {...register('due')} />
 
-      <SubmitButton pending={isSubmitting} disabled={!online}>{task ? 'Lưu thay đổi' : 'Thêm công việc'}</SubmitButton>
+      <SubmitButton pending={isSubmitting}>{task ? 'Lưu thay đổi' : 'Thêm công việc'}</SubmitButton>
 
       {task && (
         <>

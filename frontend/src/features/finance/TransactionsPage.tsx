@@ -11,6 +11,7 @@ import {
   transactionsQuery,
   type Transaction,
   type TransactionFilters,
+  type TransactionInput,
   type TransactionType,
 } from '@/features/finance/api'
 import { CategoryIcon } from '@/features/finance/CategoryIcon'
@@ -18,6 +19,7 @@ import { transactionTypeOptions } from '@/features/finance/labels'
 import { MonthSwitcher } from '@/features/finance/MonthSwitcher'
 import { TransactionFormSheet } from '@/features/finance/TransactionFormSheet'
 import { useOnlineStatus } from '@/hooks/use-online-status'
+import { useOutbox } from '@/offline/outbox'
 import { formatDayHeader, formatMonth, monthKey } from '@/lib/format'
 import { formatVnd } from '@/lib/money'
 import { cn } from '@/lib/utils'
@@ -47,6 +49,8 @@ export function TransactionsPage() {
   const categories = useQuery(categoriesQuery)
   const query = useInfiniteQuery(transactionsQuery(filters))
   const transactions = useMemo(() => query.data?.pages.flatMap((p) => p.data) ?? [], [query.data])
+  // Recorded offline, waiting in the outbox (spec §6.3)
+  const unsynced = useOutbox().filter((item) => item.entity === 'transaction')
 
   const accountName = (id: number | null) => accounts.data?.find((a) => a.id === id)?.name ?? '—'
   const category = (id: number | null) => categories.data?.find((c) => c.id === id)
@@ -87,11 +91,34 @@ export function TransactionsPage() {
           options={[{ value: ALL, label: 'Mọi danh mục' }, ...(categories.data ?? []).map((c) => ({ value: String(c.id), label: c.name }))]}
           onChange={(v) => setParam('category', v)}
         />
-        <Button className="ml-auto" disabled={!online} onClick={() => setParam('new', '1')}>
+        <Button className="ml-auto" onClick={() => setParam('new', '1')}>
           <Plus />
           Thêm
         </Button>
       </div>
+
+      {unsynced.length > 0 && (
+        <section className="rounded-xl border border-dashed border-warning/40 bg-card">
+          <h3 className="border-b px-4 py-2 text-xs font-medium text-warning">Chưa đồng bộ — số dư chưa tính các khoản này</h3>
+          <ul className="divide-y">
+            {unsynced.map((item) => {
+              const t = item.payload as TransactionInput
+              return (
+                <li key={item.id} className="flex items-center gap-3 px-4 py-3">
+                  <CategoryIcon category={category(t.category_id)} transfer={t.type === 'transfer'} />
+                  <span className="flex min-w-0 flex-1 flex-col">
+                    <span className="truncate text-sm font-medium">{t.description || category(t.category_id)?.name || 'Giao dịch'}</span>
+                    <span className={cn('text-xs', item.status === 'failed' ? 'text-destructive' : 'text-muted-foreground')}>
+                      {item.status === 'failed' ? `Lỗi đồng bộ: ${item.error}` : `Chờ đồng bộ · ${accountName(t.account_id)}`}
+                    </span>
+                  </span>
+                  <span className="text-sm font-semibold whitespace-nowrap tabular-nums">{formatVnd(t.amount)}</span>
+                </li>
+              )
+            })}
+          </ul>
+        </section>
+      )}
 
       {query.isPending ? (
         <div className="flex flex-col gap-2 rounded-xl border bg-card p-4" aria-label="Đang tải">

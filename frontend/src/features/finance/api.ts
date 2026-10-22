@@ -1,5 +1,6 @@
 import { infiniteQueryOptions, queryOptions, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api, toQuery } from '@/lib/api-client'
+import { saveOrQueue } from '@/offline/outbox'
 
 // liability = I owe (SPayLater, credit card, borrowed; balance negative); receivable = owed to me (balance positive)
 export type AccountType = 'cash' | 'bank' | 'ewallet' | 'liability' | 'receivable'
@@ -96,9 +97,20 @@ function useInvalidateMoney() {
 export function useSaveTransaction() {
   const invalidate = useInvalidateMoney()
   return useMutation({
-    mutationFn: ({ id, input }: { id: string; input: TransactionInput }) =>
-      api<{ data: Transaction }>(`/transactions/${id}`, { method: 'PUT', body: input }),
-    onSuccess: invalidate,
+    // New transactions can be recorded offline (spec §6.2): queued in the outbox, same idempotent PUT later.
+    // Editing an existing one stays online-only (the form enforces it).
+    mutationFn: ({ id, input, label }: { id: string; input: TransactionInput; label: string }) =>
+      saveOrQueue<{ data: Transaction }>({
+        entity: 'transaction',
+        entityId: id,
+        created: true,
+        endpoint: `/transactions/${id}`,
+        payload: input,
+        label,
+      }),
+    onSuccess: (result) => {
+      if (!result.queued) return invalidate()
+    },
   })
 }
 

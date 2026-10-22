@@ -167,8 +167,9 @@ function TransactionFormBody({
 
   const onSubmit = handleSubmit(async (v) => {
     try {
-      await saveTransaction.mutateAsync({
+      const { queued } = await saveTransaction.mutateAsync({
         id: transaction?.id ?? crypto.randomUUID(),
+        label: `Giao dịch ${formatVnd(v.amount)}${v.description.trim() ? ` — ${v.description.trim()}` : ''}`,
         input: {
           type: v.type,
           amount: v.amount,
@@ -179,7 +180,8 @@ function TransactionFormBody({
           description: v.description.trim() || null,
         },
       })
-      toast.success(transaction ? 'Đã lưu thay đổi' : `Đã ghi ${formatVnd(v.amount)}`)
+      if (queued) toast.info(`Đã lưu ${formatVnd(v.amount)} trên máy — sẽ tự đồng bộ khi có mạng`)
+      else toast.success(transaction ? 'Đã lưu thay đổi' : `Đã ghi ${formatVnd(v.amount)}`)
       onDone()
     } catch (error) {
       applyServerErrors(error, setError)
@@ -206,7 +208,14 @@ function TransactionFormBody({
 
   return (
     <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4 px-4 pb-6">
-      {!online && <FormError message="Bạn đang offline. Cần có mạng để lưu (ghi offline sẽ có ở bản sau)." />}
+      {!online &&
+        (transaction ? (
+          <FormError message="Bạn đang offline. Sửa giao dịch cần có mạng." />
+        ) : (
+          <p className="rounded-lg border bg-accent/50 p-3 text-sm text-muted-foreground">
+            Bạn đang offline. Giao dịch được lưu trên máy và tự đồng bộ khi có mạng.
+          </p>
+        ))}
       <FormError message={errors.root?.message} />
 
       <div role="tablist" aria-label="Loại giao dịch" className="grid grid-cols-3 gap-1 rounded-xl border bg-muted/40 p-1">
@@ -289,7 +298,7 @@ function TransactionFormBody({
       <TextField label="Thời gian" type="datetime-local" error={errors.occurred?.message} {...register('occurred')} />
       <TextField label="Ghi chú" placeholder="Không bắt buộc" error={errors.description?.message} {...register('description')} />
 
-      <SubmitButton pending={isSubmitting} disabled={!online}>
+      <SubmitButton pending={isSubmitting} disabled={!online && !!transaction}>
         {transaction ? 'Lưu thay đổi' : 'Lưu giao dịch'}
       </SubmitButton>
 

@@ -23,6 +23,8 @@ class UpsertTaskRequest extends FormRequest
             'priority' => ['required', Rule::enum(TaskPriority::class)],
             'status' => ['required', Rule::enum(TaskStatus::class)],
             'due_at' => ['present', 'nullable', 'date'],
+            // When the edit was made on the client (offline outbox) — used for last-write-wins.
+            'client_updated_at' => ['sometimes', 'nullable', 'date'],
         ];
     }
 }

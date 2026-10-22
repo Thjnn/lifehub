@@ -98,7 +98,6 @@ export function AccountsPage() {
                       key={d.id}
                       debt={d}
                       nextDue={nextDue(d.id)}
-                      online={online}
                       onOpen={() => setEditing(d)}
                       onSettle={(amount) => setSettling(settleDefaults(d, amount, all))}
                     />
@@ -178,13 +177,11 @@ function scheduleText(debt: Account) {
 function DebtCard({
   debt,
   nextDue,
-  online,
   onOpen,
   onSettle,
 }: {
   debt: Account
   nextDue?: DueItem
-  online: boolean
   onOpen: () => void
   onSettle: (amount: string) => void
 }) {
@@ -264,7 +261,7 @@ function DebtCard({
           )}
         </span>
         {left && toPay && (
-          <Button size="sm" variant="outline" disabled={!online} onClick={() => onSettle(toPay)}>
+          <Button size="sm" variant="outline" onClick={() => onSettle(toPay)}>
             {liability ? 'Trả nợ' : 'Thu nợ'}
           </Button>
         )}

@@ -1,6 +1,7 @@
-import { infiniteQueryOptions, useMutation, useQueryClient, type InfiniteData } from '@tanstack/react-query'
+import { infiniteQueryOptions, useMutation, useQueryClient, type InfiniteData, type QueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { api, toQuery } from '@/lib/api-client'
+import { saveOrQueue } from '@/offline/outbox'
 
 export type TaskPriority = 'low' | 'medium' | 'high' | 'urgent'
 export type TaskStatus = 'todo' | 'in_progress' | 'completed' | 'cancelled'
@@ -43,10 +44,6 @@ export const tasksQuery = (filters: TaskFilters) =>
     getNextPageParam: (last) => (last.meta.current_page < last.meta.last_page ? last.meta.current_page + 1 : undefined),
   })
 
-// PUT is an idempotent upsert keyed by a client-made UUID — the same call works for create, edit and (Phase 7) offline sync.
-const saveTask = (id: string, input: TaskInput) =>
-  api<{ data: Task }>(`/tasks/${id}`, { method: 'PUT', body: input }).then((r) => r.data)
-
 const toInput = ({ title, description, priority, status, due_at }: Task): TaskInput => ({
   title,
   description,
@@ -55,11 +52,43 @@ const toInput = ({ title, description, priority, status, due_at }: Task): TaskIn
   due_at,
 })
 
+// Show an offline edit right away in every cached task list (infinite lists and the calendar's plain list).
+function patchCachedTask(queryClient: QueryClient, id: string, patch: Partial<Task>) {
+  queryClient.setQueriesData<InfiniteData<TaskPage> | Task[]>({ queryKey: taskKeys.all }, (data) => {
+    const update = (t: Task) => (t.id === id ? { ...t, ...patch } : t)
+    if (Array.isArray(data)) return data.map(update)
+    if (data && 'pages' in data) return { ...data, pages: data.pages.map((p) => ({ ...p, data: p.data.map(update) })) }
+    return data
+  })
+}
+
+/**
+ * Create/edit/complete all use the idempotent PUT /tasks/{uuid}, so they work offline (spec §6.2–6.3):
+ * without a connection the write waits in the outbox and syncs later. Queued payloads carry
+ * client_updated_at for last-write-wins; direct online saves don't need it.
+ */
+function putTask(id: string, input: TaskInput, created: boolean) {
+  return saveOrQueue<{ data: Task }>(
+    {
+      entity: 'task',
+      entityId: id,
+      created,
+      endpoint: `/tasks/${id}`,
+      payload: { ...input, client_updated_at: new Date().toISOString() },
+      label: `Công việc: ${input.title}`,
+    },
+    { ...input },
+  )
+}
+
 export function useSaveTask() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, input }: { id: string; input: TaskInput }) => saveTask(id, input),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: taskKeys.all }),
+    mutationFn: ({ id, input, created }: { id: string; input: TaskInput; created: boolean }) => putTask(id, input, created),
+    onSuccess: (result, { id, input }) => {
+      if (result.queued) patchCachedTask(queryClient, id, input)
+      else return queryClient.invalidateQueries({ queryKey: taskKeys.all })
+    },
   })
 }
 
@@ -71,32 +100,24 @@ export function useDeleteTask() {
   })
 }
 
-// Checkbox: flips instantly (optimistic), rolls back if the server refuses.
+// Checkbox: flips instantly (optimistic); rolls back only if the server refuses. Offline it is queued and stays flipped.
 export function useToggleTask() {
   const queryClient = useQueryClient()
 
-  const setStatus = (id: string, status: TaskStatus) =>
-    queryClient.setQueriesData<InfiniteData<TaskPage>>({ queryKey: taskKeys.all }, (data) =>
-      data && 'pages' in data
-        ? { ...data, pages: data.pages.map((page) => ({ ...page, data: page.data.map((t) => (t.id === id ? { ...t, status } : t)) })) }
-        : data,
-    )
-
   return useMutation({
-    mutationFn: (task: Task) =>
-      task.status === 'completed'
-        ? saveTask(task.id, { ...toInput(task), status: 'todo' })
-        : api<{ data: Task }>(`/tasks/${task.id}/complete`, { method: 'POST' }).then((r) => r.data),
+    mutationFn: (task: Task) => putTask(task.id, { ...toInput(task), status: task.status === 'completed' ? 'todo' : 'completed' }, false),
     onMutate: async (task) => {
       await queryClient.cancelQueries({ queryKey: taskKeys.all })
       const previous = queryClient.getQueriesData({ queryKey: taskKeys.all })
-      setStatus(task.id, task.status === 'completed' ? 'todo' : 'completed')
+      patchCachedTask(queryClient, task.id, { status: task.status === 'completed' ? 'todo' : 'completed' })
       return { previous }
     },
     onError: (error, _task, context) => {
       context?.previous.forEach(([key, data]) => queryClient.setQueryData(key, data))
       toast.error(error.message)
     },
-    onSettled: () => queryClient.invalidateQueries({ queryKey: taskKeys.all }),
+    onSuccess: (result) => {
+      if (!result.queued) return queryClient.invalidateQueries({ queryKey: taskKeys.all })
+    },
   })
 }

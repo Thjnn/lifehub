@@ -3,6 +3,7 @@ import { QueryCache, QueryClient } from '@tanstack/react-query'
 import { persistQueryClient } from '@tanstack/react-query-persist-client'
 import { del, get, set } from 'idb-keyval'
 import { ApiError } from '@/lib/api-client'
+import { db } from '@/offline/db'
 
 // Offline level 2 (spec §6.2): the last fetched data is kept in IndexedDB and shown when offline.
 const OFFLINE_MAX_AGE = 7 * 24 * 60 * 60 * 1000
@@ -25,6 +26,9 @@ export const queryClient = new QueryClient({
       // 4xx won't fix itself; network errors and 5xx (cold start) get two more tries.
       retry: (failureCount, error) => !isClientError(error) && failureCount < 2,
     },
+    // TanStack pauses mutations while offline by default, which would leave forms spinning forever.
+    // Ours run immediately: offline-capable ones queue in the outbox, online-only ones fail with "no connection".
+    mutations: { networkMode: 'always' },
   },
 })
 
@@ -45,5 +49,6 @@ export function restoreOfflineCache() {
 export async function clearOfflineData() {
   queryClient.clear()
   await persister.removeClient()
-  // Phase 7: also clear the Dexie outbox here.
+  // Unsynced writes belong to the user who made them (callers warn before discarding them).
+  await db.outbox.clear()
 }

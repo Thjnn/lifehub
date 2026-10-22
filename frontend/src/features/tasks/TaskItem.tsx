@@ -6,7 +6,8 @@ import { isOverdue, priorityOption, statusLabel } from '@/features/tasks/labels'
 import { formatDue } from '@/lib/format'
 import { cn } from '@/lib/utils'
 
-export function TaskItem({ task, onOpen, readOnly }: { task: Task; onOpen: () => void; readOnly: boolean }) {
+// sync: present when the task has a write waiting in the offline outbox
+export function TaskItem({ task, onOpen, sync }: { task: Task; onOpen: () => void; sync?: 'pending' | 'failed' }) {
   const toggle = useToggleTask()
   const done = task.status === 'completed'
   const overdue = isOverdue(task)
@@ -17,7 +18,7 @@ export function TaskItem({ task, onOpen, readOnly }: { task: Task; onOpen: () =>
       <Checkbox
         className="mt-0.5 size-5"
         checked={done}
-        disabled={readOnly || task.status === 'cancelled'}
+        disabled={task.status === 'cancelled'}
         onCheckedChange={() => toggle.mutate(task)}
         aria-label={done ? `Đánh dấu chưa xong: ${task.title}` : `Hoàn thành: ${task.title}`}
       />
@@ -34,6 +35,11 @@ export function TaskItem({ task, onOpen, readOnly }: { task: Task; onOpen: () =>
           {task.status === 'in_progress' || task.status === 'cancelled' ? (
             <Badge variant="outline">{statusLabel(task.status)}</Badge>
           ) : null}
+          {sync && (
+            <Badge variant="outline" className={sync === 'failed' ? 'border-destructive/40 text-destructive' : 'border-warning/40 text-warning'}>
+              {sync === 'failed' ? 'Lỗi đồng bộ' : 'Chưa đồng bộ'}
+            </Badge>
+          )}
           {task.due_at && (
             <span className={cn('inline-flex items-center gap-1', overdue ? 'text-destructive' : 'text-muted-foreground')}>
               <CalendarClock className="size-3.5" aria-hidden />

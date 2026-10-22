@@ -123,6 +123,29 @@ class TaskTest extends TestCase
         $this->actingAs($this->user)->putJson("/api/v1/tasks/{$task->id}", $this->payload())->assertConflict();
     }
 
+    public function test_last_write_wins_for_offline_edits(): void
+    {
+        $this->travelTo('2026-10-22 10:00:00');
+        $task = Task::factory()->for($this->user)->create(['title' => 'Gốc']);
+
+        // Edited on another device at 10:05
+        $this->travelTo('2026-10-22 10:05:00');
+        $this->actingAs($this->user)->putJson("/api/v1/tasks/{$task->id}", $this->payload(['title' => 'Máy B', 'client_updated_at' => now()->toIso8601String()]))->assertOk();
+
+        // An offline edit made at 10:02 arrives later → server's newer version wins
+        $this->travelTo('2026-10-22 10:10:00');
+        $this->actingAs($this->user)->putJson("/api/v1/tasks/{$task->id}", $this->payload([
+            'title' => 'Máy A (offline)',
+            'client_updated_at' => '2026-10-22T10:02:00Z',
+        ]))->assertConflict()->assertJsonPath('data.title', 'Máy B');
+        $this->assertSame('Máy B', $task->fresh()->title);
+
+        // A newer offline edit wins; resending without client_updated_at overwrites on purpose
+        $this->actingAs($this->user)->putJson("/api/v1/tasks/{$task->id}", $this->payload(['title' => 'Máy A mới', 'client_updated_at' => '2026-10-22T10:09:00Z']))->assertOk();
+        $this->actingAs($this->user)->putJson("/api/v1/tasks/{$task->id}", $this->payload(['title' => 'Ghi đè']))->assertOk();
+        $this->assertSame('Ghi đè', $task->fresh()->title);
+    }
+
     public function test_filters_and_sorting(): void
     {
         $overdue = Task::factory()->for($this->user)->create(['due_at' => now()->subDay(), 'priority' => 'low']);

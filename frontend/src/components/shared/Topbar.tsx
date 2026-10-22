@@ -5,6 +5,17 @@ import { Link, useNavigate } from 'react-router'
 import { toast } from 'sonner'
 import { IosInstallSheet } from '@/components/shared/IosInstallSheet'
 import { NetworkStatus } from '@/components/shared/NetworkStatus'
+import { SyncStatus } from '@/components/shared/SyncStatus'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { QuickCreate } from '@/components/shared/QuickCreate'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
@@ -19,6 +30,7 @@ import {
 import { logout, meQuery } from '@/features/auth/api'
 import { useInstallPrompt } from '@/hooks/use-install-prompt'
 import { usePageTitle } from '@/hooks/use-page-title'
+import { db } from '@/offline/db'
 
 // "Nguyễn Văn Minh" → "VM"
 const initials = (name: string) =>
@@ -36,9 +48,18 @@ export function Topbar() {
   const installer = useInstallPrompt()
   const [iosHelpOpen, setIosHelpOpen] = useState(false)
 
-  async function handleLogout() {
+  const [confirmLogout, setConfirmLogout] = useState(0) // number of unsynced changes that logout would discard
+
+  async function doLogout() {
     await logout()
     navigate('/login', { replace: true })
+  }
+
+  // Logout wipes offline data (spec §5) — including writes not yet synced, so ask first.
+  async function handleLogout() {
+    const unsynced = await db.outbox.count()
+    if (unsynced > 0) setConfirmLogout(unsynced)
+    else await doLogout()
   }
 
   return (
@@ -55,6 +76,7 @@ export function Topbar() {
           <Search className="size-4" aria-hidden />
           Tìm nhanh…
         </button>
+        <SyncStatus />
         <NetworkStatus />
         <QuickCreate
           trigger={
@@ -103,6 +125,22 @@ export function Topbar() {
         </DropdownMenu>
       </div>
       <IosInstallSheet open={iosHelpOpen} onOpenChange={setIosHelpOpen} />
+      <AlertDialog open={confirmLogout > 0} onOpenChange={(open) => !open && setConfirmLogout(0)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Còn {confirmLogout} thay đổi chưa đồng bộ</AlertDialogTitle>
+            <AlertDialogDescription>
+              Đăng xuất sẽ xoá chúng khỏi máy này. Hãy kết nối mạng để đồng bộ trước, hoặc vẫn đăng xuất nếu không cần nữa.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Ở lại</AlertDialogCancel>
+            <AlertDialogAction variant="destructive" onClick={doLogout}>
+              Vẫn đăng xuất
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </header>
   )
 }

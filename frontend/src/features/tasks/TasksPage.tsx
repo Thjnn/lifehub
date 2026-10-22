@@ -5,7 +5,7 @@ import { useSearchParams } from 'react-router'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
-import { tasksQuery, type Task, type TaskPriority } from '@/features/tasks/api'
+import { tasksQuery, type Task, type TaskInput, type TaskPriority } from '@/features/tasks/api'
 import {
   buildTaskFilters,
   quickViews,
@@ -19,6 +19,7 @@ import { priorityOptions } from '@/features/tasks/labels'
 import { TaskFormSheet } from '@/features/tasks/TaskFormSheet'
 import { TaskItem } from '@/features/tasks/TaskItem'
 import { useOnlineStatus } from '@/hooks/use-online-status'
+import { useOutbox } from '@/offline/outbox'
 import { cn } from '@/lib/utils'
 
 const emptyMessages: Record<QuickView, string> = {
@@ -47,6 +48,13 @@ export function TasksPage() {
   // Recomputed per render so "today" never goes stale; built from day boundaries, so the key only changes when the day does.
   const query = useInfiniteQuery(tasksQuery(buildTaskFilters(view)))
   const tasks = query.data?.pages.flatMap((page) => page.data) ?? []
+
+  // Offline writes not yet on the server (spec §6.3): created ones are listed apart, edited ones get a badge.
+  const outbox = useOutbox().filter((item) => item.entity === 'task')
+  const syncState = new Map(outbox.map((item) => [item.entityId, item.status]))
+  const unsyncedNew = outbox
+    .filter((item) => item.created && !tasks.some((t) => t.id === item.entityId))
+    .map((item) => ({ ...(item.payload as TaskInput), id: item.entityId, completed_at: null, created_at: '', updated_at: '' }) as Task)
 
   const [editing, setEditing] = useState<Task>()
   const creating = params.get('new') === '1'
@@ -91,11 +99,22 @@ export function TasksPage() {
           onChange={(v) => setParam('priority', v)}
         />
         <FilterSelect label="Sắp xếp" value={view.sort} options={sortViews} onChange={(v) => setParam('sort', v)} />
-        <Button className="ml-auto" disabled={!online} onClick={() => setParam('new', '1')}>
+        <Button className="ml-auto" onClick={() => setParam('new', '1')}>
           <Plus />
           Thêm
         </Button>
       </div>
+
+      {unsyncedNew.length > 0 && (
+        <section className="rounded-xl border border-dashed border-warning/40 bg-card">
+          <h3 className="border-b px-4 py-2 text-xs font-medium text-warning">Chưa đồng bộ</h3>
+          <ul className="divide-y">
+            {unsyncedNew.map((task) => (
+              <TaskItem key={task.id} task={task} sync={syncState.get(task.id)} onOpen={() => setEditing(task)} />
+            ))}
+          </ul>
+        </section>
+      )}
 
       {query.isPending ? (
         <div className="flex flex-col gap-2 rounded-xl border bg-card p-4" aria-label="Đang tải">
@@ -114,19 +133,17 @@ export function TasksPage() {
           icon={ListTodo}
           message={emptyMessages[view.quick]}
           action={
-            online ? (
-              <Button variant="outline" onClick={() => setParam('new', '1')}>
-                <Plus />
-                Thêm công việc
-              </Button>
-            ) : undefined
+            <Button variant="outline" onClick={() => setParam('new', '1')}>
+              <Plus />
+              Thêm công việc
+            </Button>
           }
         />
       ) : (
         <>
           <ul className="divide-y rounded-xl border bg-card">
             {tasks.map((task) => (
-              <TaskItem key={task.id} task={task} readOnly={!online} onOpen={() => setEditing(task)} />
+              <TaskItem key={task.id} task={task} sync={syncState.get(task.id)} onOpen={() => setEditing(task)} />
             ))}
           </ul>
           {query.hasNextPage && (

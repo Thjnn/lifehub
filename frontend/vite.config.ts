@@ -44,5 +44,7 @@ export default defineConfig({
   },
   test: {
     environment: 'jsdom',
+    // jsdom has no IndexedDB; Dexie (offline outbox) needs one
+    setupFiles: ['fake-indexeddb/auto'],
   },
 })
