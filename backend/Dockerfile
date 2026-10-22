@@ -23,6 +23,9 @@ ENV APP_ENV=production \
     LOG_CHANNEL=stderr \
     QUEUE_CONNECTION=sync
 
+# Caddy's admin API (live config reloads) is unused in a container; turn it off rather than leave it on :2019.
+ENV CADDY_GLOBAL_OPTIONS="admin off"
+
 WORKDIR /app
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 COPY --from=vendor /app/vendor ./vendor
