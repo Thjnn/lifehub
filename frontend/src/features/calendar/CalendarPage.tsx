@@ -186,7 +186,10 @@ export function CalendarPage() {
               : { left: 'prev,next', center: 'title', right: 'today' }
           }
           footerToolbar={isDesktop ? undefined : { center: 'timeGridDay,timeGridWeek,dayGridMonth,listWeek' }}
-          buttonText={{ list: 'Danh sách' }}
+          // No icon font: FullCalendar's ‹ › icons are a data: font that our CSP (font-src 'self') blocks.
+          buttonIcons={false}
+          buttonText={{ prev: '‹', next: '›', list: 'Danh sách' }}
+          buttonHints={{ prev: 'Trước', next: 'Sau', today: 'Hôm nay' }}
           height={isDesktop ? 'calc(100dvh - 15rem)' : 'auto'}
           allDaySlot={false}
           nowIndicator

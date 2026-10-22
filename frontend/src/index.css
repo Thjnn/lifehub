@@ -179,3 +179,10 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+/* Text chevrons replace the icon font in the prev/next buttons */
+.fc.fc .fc-prev-button,
+.fc.fc .fc-next-button {
+  min-width: 2.25rem;
+  font-size: 1.25rem;
+  line-height: 1;
+}
