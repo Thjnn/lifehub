@@ -11,6 +11,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request as HttpRequest;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 class AiTest extends TestCase
@@ -165,26 +166,39 @@ class AiTest extends TestCase
         $this->actingAs($this->user)->postJson('/api/v1/ai/chat', ['message' => 'hi'])->assertTooManyRequests();
     }
 
-    public function test_provider_problems_are_friendly_503s(): void
+    /**
+     * Each case gets its own test: Http::fake stubs stack, so a later fake in the same test never wins.
+     *
+     * @return array<string, array{int, array<string, mixed>, string}>
+     */
+    public static function providerFailures(): array
     {
-        Http::fake(['generativelanguage.googleapis.com/*' => Http::response(['error' => 'quota'], 429)]);
+        return [
+            'quota' => [429, ['error' => ['message' => 'quota']], 'AI Coach đang quá tải (hết hạn mức miễn phí), thử lại sau ít phút.'],
+            'retired model' => [404, ['error' => ['message' => 'models/x is not found']], 'Không tìm thấy model "gemini-test". Kiểm tra biến GEMINI_MODEL.'],
+            'invalid key' => [400, ['error' => ['message' => 'API key not valid. Please pass a valid API key.', 'status' => 'INVALID_ARGUMENT']], 'GEMINI_API_KEY không hợp lệ. Tạo lại key trong AI Studio và cập nhật trên Render.'],
+            'forbidden key' => [403, ['error' => ['message' => 'Permission denied']], 'GEMINI_API_KEY không có quyền dùng Gemini API (key bị chặn hoặc chưa bật API).'],
+            'other 400' => [400, ['error' => ['message' => 'Invalid JSON payload received.']], 'Gemini từ chối yêu cầu (mã 400): Invalid JSON payload received.'],
+            'server error' => [500, ['error' => ['message' => 'internal']], 'AI Coach đang gặp lỗi (mã 500), vui lòng thử lại sau.'],
+        ];
+    }
+
+    #[DataProvider('providerFailures')]
+    public function test_provider_problems_are_friendly_503s(int $status, array $body, string $message): void
+    {
+        Http::fake(['generativelanguage.googleapis.com/*' => Http::response($body, $status)]);
+
         $this->actingAs($this->user)->postJson('/api/v1/ai/chat', ['message' => 'hi'])
             ->assertStatus(503)
-            ->assertJsonPath('message', 'AI Coach đang quá tải (hết hạn mức miễn phí), thử lại sau ít phút.');
+            ->assertJsonPath('message', $message);
+    }
 
-        // Google answers a bad key with 400 + "API key not valid"
-        Http::fake(['generativelanguage.googleapis.com/*' => Http::response(['error' => ['code' => 400, 'message' => 'API key not valid. Please pass a valid API key.', 'status' => 'INVALID_ARGUMENT']], 400)]);
-        $this->actingAs($this->user)->getJson('/api/v1/ai/briefing')
-            ->assertStatus(503)
-            ->assertJsonPath('message', 'GEMINI_API_KEY không hợp lệ. Tạo lại key trong AI Studio và cập nhật trên Render.');
-
-        // Any other refusal keeps the provider's reason, so it can be fixed
-        Http::fake(['generativelanguage.googleapis.com/*' => Http::response(['error' => ['code' => 400, 'message' => 'Invalid JSON payload received.']], 400)]);
-        $this->actingAs($this->user)->getJson('/api/v1/ai/briefing')
-            ->assertStatus(503)
-            ->assertJsonPath('message', 'Gemini từ chối yêu cầu (mã 400): Invalid JSON payload received.');
-
+    public function test_missing_key_is_a_friendly_503(): void
+    {
         config(['services.gemini.key' => null]);
-        $this->actingAs($this->user)->getJson('/api/v1/ai/briefing')->assertStatus(503);
+
+        $this->actingAs($this->user)->getJson('/api/v1/ai/briefing')
+            ->assertStatus(503)
+            ->assertJsonPath('message', 'AI Coach chưa được cấu hình (thiếu GEMINI_API_KEY).');
     }
 }
