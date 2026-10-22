@@ -63,7 +63,7 @@ export function DashboardPage() {
             <QuickAction to="/app/finance/transactions?new=1" icon={Wallet} label="Giao dịch" />
           </div>
         </section>
-        <WeatherCard weather={weather.data} pending={weather.isPending} />
+        <WeatherCard weather={weather.data} pending={weather.isPending} error={weather.error?.message} onRetry={() => weather.refetch()} />
       </div>
 
       {online && <BriefingCard />}
@@ -104,8 +104,30 @@ function QuickAction({ to, icon: Icon, label }: { to: string; icon: typeof ListT
   )
 }
 
-function WeatherCard({ weather, pending }: { weather: Weather | null | undefined; pending: boolean }) {
+function WeatherCard({
+  weather,
+  pending,
+  error,
+  onRetry,
+}: {
+  weather: Weather | null | undefined
+  pending: boolean
+  error?: string
+  onRetry: () => void
+}) {
   if (pending) return <Skeleton className="h-40" />
+  // City chosen but the forecast failed: show why, don't pretend no city is set.
+  if (error) {
+    return (
+      <section className="flex flex-col items-start justify-center gap-2 rounded-xl border border-dashed bg-card/50 p-4 text-sm text-muted-foreground">
+        {error}
+        <Button size="sm" variant="outline" onClick={onRetry}>
+          <RotateCw />
+          Thử lại
+        </Button>
+      </section>
+    )
+  }
   if (!weather) {
     return (
       <section className="flex flex-col items-start justify-center gap-2 rounded-xl border border-dashed bg-card/50 p-4 text-sm text-muted-foreground">

@@ -88,12 +88,18 @@ class DashboardTest extends TestCase
         Http::assertSentCount(1); // second request served from cache
     }
 
-    public function test_weather_provider_down_hides_the_card_instead_of_failing(): void
+    public function test_weather_provider_down_says_so_and_is_not_cached(): void
     {
         Http::fake(['api.open-meteo.com/*' => Http::response('oops', 500)]);
         $this->user->settings->update(['city_name' => 'Hà Nội', 'latitude' => 21.0285, 'longitude' => 105.8542]);
 
-        $this->actingAs($this->user)->getJson('/api/v1/weather')->assertOk()->assertJsonPath('data', null);
+        $this->actingAs($this->user)->getJson('/api/v1/weather')
+            ->assertStatus(503)
+            ->assertJsonPath('message', 'Không tải được thời tiết cho Hà Nội lúc này, thử lại sau.');
+
+        // A malformed answer (200 but not the expected shape) is handled the same way, not a 500
+        Http::fake(['api.open-meteo.com/*' => Http::response(['unexpected' => true])]);
+        $this->actingAs($this->user)->getJson('/api/v1/weather')->assertStatus(503);
     }
 
     public function test_city_search_proxies_the_geocoder(): void

@@ -2,10 +2,11 @@
 
 namespace App\Services\Weather;
 
-use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
+use Throwable;
 
 /**
  * Open-Meteo (spec §15.5): free, no API key, non-commercial use. Called from the backend only and cached,
@@ -50,8 +51,13 @@ class OpenMeteo
 
         try {
             return Cache::remember($key, now()->addHour(), fn () => $this->fetch($latitude, $longitude, $timezone));
-        } catch (ConnectionException|RequestException) {
-            return null; // don't cache failures; the dashboard just hides the weather card
+        } catch (Throwable $e) {
+            // Not cached, so the next request retries. Logged (stderr on Render) — a silent null hid problems before.
+            Log::warning('Open-Meteo forecast failed', [
+                'error' => $e instanceof RequestException ? 'HTTP '.$e->response->status().': '.mb_substr($e->response->body(), 0, 300) : $e->getMessage(),
+            ]);
+
+            return null;
         }
     }
 

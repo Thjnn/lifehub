@@ -13,7 +13,7 @@ class WeatherController extends Controller
 {
     public function __construct(private OpenMeteo $weather) {}
 
-    // GET /weather — forecast for the city chosen in Settings; data is null when none is set or the provider is down.
+    // GET /weather — forecast for the city chosen in Settings; data is null when none is set, 503 when the provider is down.
     public function show(Request $request): JsonResponse
     {
         $settings = $request->user()->settings;
@@ -22,8 +22,10 @@ class WeatherController extends Controller
         }
 
         $forecast = $this->weather->forecast($settings->latitude, $settings->longitude, $settings->timezone);
+        // City set but the provider failed: say so (503) instead of looking like "no city chosen".
+        abort_if($forecast === null, 503, "Không tải được thời tiết cho {$settings->city_name} lúc này, thử lại sau.");
 
-        return response()->json(['data' => $forecast === null ? null : ['city' => $settings->city_name, ...$forecast]]);
+        return response()->json(['data' => ['city' => $settings->city_name, ...$forecast]]);
     }
 
     // GET /weather/cities?q= — city search for the Settings picker.
