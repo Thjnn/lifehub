@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\DB;
 class PrivacyController extends Controller
 {
     /** Tables holding a user_id column, exported as-is. */
-    private const TABLES = ['user_settings', 'tasks', 'events', 'notes', 'accounts', 'categories', 'transactions', 'budgets', 'ai_conversations', 'ai_action_proposals', 'ai_daily_briefings'];
+    private const TABLES = ['user_settings', 'tasks', 'events', 'notes', 'nutrition_profiles', 'food_entries', 'accounts', 'categories', 'transactions', 'budgets', 'ai_conversations', 'ai_action_proposals', 'ai_daily_briefings'];
 
     public function export(Request $request): JsonResponse
     {

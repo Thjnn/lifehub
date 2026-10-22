@@ -10,6 +10,7 @@ Personal Life OS: quản lý lịch, công việc, tài chính kèm AI Coach. PW
 - **Tài chính:** tài khoản, danh mục, giao dịch (thu/chi/chuyển khoản), ngân sách, báo cáo tháng, khoản nợ/trả góp kiểu SPayLater (hạn mức, khả dụng, cần trả).
 - **Tổng quan:** việc hôm nay/quá hạn, chi tiêu tháng, thời tiết (Open-Meteo, gọi từ trình duyệt).
 - **AI Coach (Gemini):** briefing mỗi ngày, chat trả lời từ dữ liệu thật; AI chỉ *đề xuất* tạo việc/sự kiện, người dùng phải xác nhận; không có quyền ghi giao dịch.
+- **Dinh dưỡng:** mục tiêu calo/protein tính theo công thức Mifflin-St Jeor, nhật ký ăn uống theo bữa với ~40 món Việt có sẵn hoặc tự nhập.
 - **Ghi chú:** tìm kiếm không cần gõ dấu, ghim lên đầu, gắn vào công việc/sự kiện, viết được khi offline.
 - **PWA offline:** cài được, xem dữ liệu cũ khi mất mạng, ghi offline rồi tự đồng bộ (outbox).
 - **Quyền riêng tư:** xuất toàn bộ dữ liệu JSON, xoá cache trên máy, xoá tài khoản.

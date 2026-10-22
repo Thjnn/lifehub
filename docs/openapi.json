@@ -2336,6 +2336,441 @@
                 }
             }
         },
+        "/v1/nutrition/profile": {
+            "get": {
+                "operationId": "nutrition.profile",
+                "tags": [
+                    "Nutrition"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": [
+                                                "array",
+                                                "null"
+                                            ],
+                                            "items": {}
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            },
+            "put": {
+                "operationId": "nutrition.updateProfile",
+                "tags": [
+                    "Nutrition"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "goal": {
+                                        "$ref": "#/components/schemas/NutritionGoal"
+                                    },
+                                    "sex": {
+                                        "type": "string",
+                                        "enum": [
+                                            "male",
+                                            "female"
+                                        ]
+                                    },
+                                    "birth_year": {
+                                        "type": "integer",
+                                        "minimum": 1926,
+                                        "maximum": 2016
+                                    },
+                                    "weight_kg": {
+                                        "type": "number",
+                                        "minimum": 20,
+                                        "maximum": 300
+                                    },
+                                    "height_cm": {
+                                        "type": "integer",
+                                        "minimum": 100,
+                                        "maximum": 250
+                                    },
+                                    "workouts_per_week": {
+                                        "type": "integer",
+                                        "minimum": 0,
+                                        "maximum": 14
+                                    }
+                                },
+                                "required": [
+                                    "goal",
+                                    "sex",
+                                    "birth_year",
+                                    "weight_kg",
+                                    "height_cm",
+                                    "workouts_per_week"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": [
+                                                "array",
+                                                "null"
+                                            ],
+                                            "items": {}
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/v1/foods": {
+            "get": {
+                "operationId": "nutrition.foods",
+                "tags": [
+                    "Nutrition"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/Food"
+                                            }
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/v1/food-entries": {
+            "get": {
+                "operationId": "nutrition.entries",
+                "summary": "GET /food-entries?date=Y-m-d \u2014 one day in the user's timezone, with totals and targets",
+                "tags": [
+                    "Nutrition"
+                ],
+                "parameters": [
+                    {
+                        "name": "date",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "integer"
+                                                    },
+                                                    "eaten_at": {
+                                                        "type": [
+                                                            "string",
+                                                            "null"
+                                                        ]
+                                                    },
+                                                    "meal": {
+                                                        "$ref": "#/components/schemas/Meal"
+                                                    },
+                                                    "food_id": {
+                                                        "type": [
+                                                            "integer",
+                                                            "null"
+                                                        ]
+                                                    },
+                                                    "name": {
+                                                        "type": "string"
+                                                    },
+                                                    "grams": {
+                                                        "type": [
+                                                            "number",
+                                                            "null"
+                                                        ]
+                                                    },
+                                                    "kcal": {
+                                                        "type": "number"
+                                                    },
+                                                    "protein_g": {
+                                                        "type": "number"
+                                                    },
+                                                    "carbs_g": {
+                                                        "type": "number"
+                                                    },
+                                                    "fat_g": {
+                                                        "type": "number"
+                                                    },
+                                                    "source": {
+                                                        "type": "string"
+                                                    }
+                                                },
+                                                "required": [
+                                                    "id",
+                                                    "eaten_at",
+                                                    "meal",
+                                                    "food_id",
+                                                    "name",
+                                                    "grams",
+                                                    "kcal",
+                                                    "protein_g",
+                                                    "carbs_g",
+                                                    "fat_g",
+                                                    "source"
+                                                ]
+                                            }
+                                        },
+                                        "meta": {
+                                            "type": "object",
+                                            "properties": {
+                                                "date": {
+                                                    "type": "string"
+                                                },
+                                                "totals": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "kcal": {
+                                                            "type": "number"
+                                                        },
+                                                        "protein_g": {
+                                                            "type": "number"
+                                                        },
+                                                        "carbs_g": {
+                                                            "type": "number"
+                                                        },
+                                                        "fat_g": {
+                                                            "type": "number"
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "kcal",
+                                                        "protein_g",
+                                                        "carbs_g",
+                                                        "fat_g"
+                                                    ]
+                                                },
+                                                "targets": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                }
+                                            },
+                                            "required": [
+                                                "date",
+                                                "totals",
+                                                "targets"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "data",
+                                        "meta"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            },
+            "post": {
+                "operationId": "nutrition.storeEntry",
+                "tags": [
+                    "Nutrition"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/FoodEntryRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer"
+                                                },
+                                                "eaten_at": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "meal": {
+                                                    "$ref": "#/components/schemas/Meal"
+                                                },
+                                                "food_id": {
+                                                    "type": [
+                                                        "integer",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "name": {
+                                                    "type": "string"
+                                                },
+                                                "grams": {
+                                                    "type": [
+                                                        "number",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "kcal": {
+                                                    "type": "number"
+                                                },
+                                                "protein_g": {
+                                                    "type": "number"
+                                                },
+                                                "carbs_g": {
+                                                    "type": "number"
+                                                },
+                                                "fat_g": {
+                                                    "type": "number"
+                                                },
+                                                "source": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "required": [
+                                                "id",
+                                                "eaten_at",
+                                                "meal",
+                                                "food_id",
+                                                "name",
+                                                "grams",
+                                                "kcal",
+                                                "protein_g",
+                                                "carbs_g",
+                                                "fat_g",
+                                                "source"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/v1/food-entries/{entry}": {
+            "delete": {
+                "operationId": "nutrition.destroyEntry",
+                "tags": [
+                    "Nutrition"
+                ],
+                "parameters": [
+                    {
+                        "name": "entry",
+                        "in": "path",
+                        "required": true,
+                        "description": "The entry ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No content"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
         "/v1/auth/forgot-password": {
             "post": {
                 "operationId": "passwordReset.forgot",
@@ -3636,6 +4071,132 @@
                 ],
                 "title": "EventType"
             },
+            "Food": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "serving": {
+                        "type": "string"
+                    },
+                    "serving_grams": {
+                        "type": "integer"
+                    },
+                    "kcal": {
+                        "type": "number"
+                    },
+                    "protein_g": {
+                        "type": "number"
+                    },
+                    "carbs_g": {
+                        "type": "number"
+                    },
+                    "fat_g": {
+                        "type": "number"
+                    },
+                    "created_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "date-time"
+                    }
+                },
+                "required": [
+                    "id",
+                    "name",
+                    "serving",
+                    "serving_grams",
+                    "kcal",
+                    "protein_g",
+                    "carbs_g",
+                    "fat_g",
+                    "created_at",
+                    "updated_at"
+                ],
+                "title": "Food"
+            },
+            "FoodEntryRequest": {
+                "type": "object",
+                "description": "Either a dish from `foods` + grams (nutrition computed on the server), or the user's own numbers.",
+                "properties": {
+                    "eaten_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "meal": {
+                        "$ref": "#/components/schemas/Meal"
+                    },
+                    "food_id": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
+                    },
+                    "grams": {
+                        "type": [
+                            "number",
+                            "null"
+                        ],
+                        "maximum": 5000
+                    },
+                    "name": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 100
+                    },
+                    "kcal": {
+                        "type": [
+                            "number",
+                            "null"
+                        ],
+                        "minimum": 0,
+                        "maximum": 10000
+                    },
+                    "protein_g": {
+                        "type": [
+                            "number",
+                            "null"
+                        ],
+                        "minimum": 0,
+                        "maximum": 1000
+                    },
+                    "carbs_g": {
+                        "type": [
+                            "number",
+                            "null"
+                        ],
+                        "minimum": 0,
+                        "maximum": 1000
+                    },
+                    "fat_g": {
+                        "type": [
+                            "number",
+                            "null"
+                        ],
+                        "minimum": 0,
+                        "maximum": 1000
+                    }
+                },
+                "required": [
+                    "eaten_at",
+                    "meal"
+                ],
+                "title": "FoodEntryRequest"
+            },
             "LoginRequest": {
                 "type": "object",
                 "properties": {
@@ -3657,6 +4218,16 @@
                     "device_name"
                 ],
                 "title": "LoginRequest"
+            },
+            "Meal": {
+                "type": "string",
+                "enum": [
+                    "breakfast",
+                    "lunch",
+                    "dinner",
+                    "snack"
+                ],
+                "title": "Meal"
             },
             "NoteResource": {
                 "type": "object",
@@ -3712,6 +4283,15 @@
                     "updated_at"
                 ],
                 "title": "NoteResource"
+            },
+            "NutritionGoal": {
+                "type": "string",
+                "enum": [
+                    "cut",
+                    "maintain",
+                    "bulk"
+                ],
+                "title": "NutritionGoal"
             },
             "RegisterRequest": {
                 "type": "object",

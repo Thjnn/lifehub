@@ -11,6 +11,7 @@ use App\Models\Account;
 use App\Models\Budget;
 use App\Models\Category;
 use App\Models\Event;
+use App\Models\Food;
 use App\Models\Note;
 use App\Models\Task;
 use App\Models\Transaction;
@@ -51,6 +52,13 @@ class DemoSeeder extends Seeder
         Note::factory()->for($user)->create(['title' => 'Dàn ý báo cáo (demo)', 'body' => "1. Giới thiệu đề tài\n2. Thiết kế ERD\n3. Chuẩn hoá 3NF\n4. Kết luận", 'pinned' => true, 'task_id' => $report]);
         Note::factory()->for($user)->create(['title' => 'Bài tập về nhà (demo)', 'body' => 'Cài đặt cây AVL, nộp trước buổi học sau.', 'event_id' => $class->id]);
         Note::factory()->for($user)->create(['title' => null, 'body' => 'Mua: sữa, trứng, bánh mì (demo)']);
+
+        $user->nutritionProfile()->create(['goal' => 'cut', 'sex' => 'male', 'birth_year' => 2004, 'weight_kg' => 68, 'height_cm' => 172, 'workouts_per_week' => 3]);
+        foreach ([['Bánh mì thịt', 'breakfast', 7], ['Cơm tấm sườn', 'lunch', 12]] as [$dish, $meal, $hour]) {
+            $food = Food::where('name', $dish)->sole();
+            $user->foodEntries()->create(['eaten_at' => $at(0, $hour), 'meal' => $meal, 'food_id' => $food->id, 'name' => $food->name, 'grams' => $food->serving_grams, 'source' => 'table']
+                + $food->only(['kcal', 'protein_g', 'carbs_g', 'fat_g']));
+        }
 
         $cash = Account::factory()->for($user)->create(['name' => 'Tiền mặt', 'account_type' => AccountType::Cash, 'opening_balance' => '800000.00']);
         $bank = Account::factory()->for($user)->create(['name' => 'Ngân hàng', 'account_type' => AccountType::Bank, 'opening_balance' => '3500000.00']);

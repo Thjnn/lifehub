@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\V1\DebtController;
 use App\Http\Controllers\Api\V1\EventController;
 use App\Http\Controllers\Api\V1\FinanceReportController;
 use App\Http\Controllers\Api\V1\NoteController;
+use App\Http\Controllers\Api\V1\NutritionController;
 use App\Http\Controllers\Api\V1\PrivacyController;
 use App\Http\Controllers\Api\V1\ProfileController;
 use App\Http\Controllers\Api\V1\SettingsController;
@@ -64,6 +65,13 @@ Route::prefix('v1')->group(function () {
         Route::put('/tasks/{id}', [TaskController::class, 'upsert'])->whereUuid('id');
         Route::post('/tasks/{task}/complete', [TaskController::class, 'complete'])->whereUuid('task');
         Route::delete('/tasks/{task}', [TaskController::class, 'destroy'])->whereUuid('task');
+
+        Route::get('/nutrition/profile', [NutritionController::class, 'profile']);
+        Route::put('/nutrition/profile', [NutritionController::class, 'updateProfile']);
+        Route::get('/foods', [NutritionController::class, 'foods']);
+        Route::get('/food-entries', [NutritionController::class, 'entries']);
+        Route::post('/food-entries', [NutritionController::class, 'storeEntry']);
+        Route::delete('/food-entries/{entry}', [NutritionController::class, 'destroyEntry'])->whereNumber('entry');
 
         Route::get('/notes', [NoteController::class, 'index']);
         Route::put('/notes/{id}', [NoteController::class, 'upsert'])->whereUuid('id');

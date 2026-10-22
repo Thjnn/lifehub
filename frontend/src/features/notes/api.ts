@@ -1,5 +1,6 @@
 import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/api-client'
+import { searchMatch } from '@/lib/search'
 import { saveOrQueue } from '@/offline/outbox'
 
 export type Note = {
@@ -24,11 +25,7 @@ export const notesQuery = queryOptions({
   queryFn: () => api<{ data: Note[] }>('/notes?per_page=100').then((r) => r.data),
 })
 
-export function matchesSearch(note: Pick<Note, 'title' | 'body'>, term: string) {
-  const fold = (s: string) => s.toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '').replace(/đ/g, 'd')
-  const needle = fold(term.trim())
-  return !needle || fold(`${note.title ?? ''}\n${note.body}`).includes(needle)
-}
+export const matchesSearch = (note: Pick<Note, 'title' | 'body'>, term: string) => searchMatch(`${note.title ?? ''}\n${note.body}`, term)
 
 export function useSaveNote() {
   const queryClient = useQueryClient()
