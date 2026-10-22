@@ -471,7 +471,7 @@ lifehub/
 ---
 
 ## 15. Để sau (v2+)
-Habits & Goals · Fitness (workout, sets, body measurements) · Nutrition (food diary, meal plans, macro) · Savings goals · Recurring transactions tự động · Import CSV · Google Calendar sync · Push notifications · Nhận diện món ăn bằng ảnh · Widget dashboard tùy chỉnh · Đa tiền tệ · Gamification.
+Habits & Goals · Fitness (workout, sets, body measurements) · Nutrition (food diary, meal plans, macro) · Savings goals · Recurring transactions tự động · Import CSV · Google Calendar sync · Push notifications · Nhận diện món ăn bằng ảnh · Widget dashboard tùy chỉnh · Đa tiền tệ · Gamification · Trả góp theo từng món cho tài khoản trả sau (tự chia kỳ, "Cần trả" = tổng các kỳ đến hạn; **chờ người dùng xác nhận quy tắc kỳ đầu / ngày chốt sao kê**).
 
 ### 15.1. Nutrition + Food scan (Phase 10 — làm đầu tiên sau MVP)
 Làm sau Phase 8 vì tái sử dụng Gemini client, rate limit và `ai_action_proposals`.
