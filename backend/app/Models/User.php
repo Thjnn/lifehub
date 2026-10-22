@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\DB;
 use Laravel\Sanctum\HasApiTokens;
 
 #[Fillable(['name', 'email', 'password'])]
@@ -64,5 +65,18 @@ class User extends Authenticatable
     public function transactions(): HasMany
     {
         return $this->hasMany(Transaction::class);
+    }
+
+    /**
+     * Delete the user and all their data. Transactions restrict deleting accounts/categories, so they go first
+     * (soft-deleted ones too); everything else cascades from users. Sanctum tokens are polymorphic, without a foreign key.
+     */
+    public function purge(): void
+    {
+        DB::transaction(function () {
+            $this->transactions()->withTrashed()->forceDelete();
+            $this->tokens()->delete();
+            $this->delete();
+        });
     }
 }

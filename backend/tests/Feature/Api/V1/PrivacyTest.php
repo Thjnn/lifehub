@@ -7,6 +7,7 @@ use App\Models\Category;
 use App\Models\Task;
 use App\Models\Transaction;
 use App\Models\User;
+use Database\Seeders\DemoSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -49,5 +50,14 @@ class PrivacyTest extends TestCase
         $this->assertDatabaseMissing('categories', ['id' => $category->id]);
         $this->assertDatabaseCount('personal_access_tokens', 0);
         $this->assertDatabaseHas('tasks', ['id' => $other->id]);
+    }
+
+    public function test_demo_seed_can_be_rerun(): void
+    {
+        $this->seed(DemoSeeder::class);
+        $this->seed(DemoSeeder::class);
+
+        $demo = User::where('email', 'demo@lifehub.test')->sole();
+        $this->assertSame(7, $demo->transactions()->count());
     }
 }

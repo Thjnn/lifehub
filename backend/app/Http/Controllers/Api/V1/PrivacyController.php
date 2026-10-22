@@ -38,15 +38,7 @@ class PrivacyController extends Controller
     public function destroy(Request $request): Response
     {
         $request->validate(['password' => ['required', 'current_password']]);
-        $user = $request->user();
-
-        DB::transaction(function () use ($user) {
-            // Transactions restrict deleting accounts/categories, so they go first (soft-deleted ones too);
-            // everything else cascades from users. Sanctum tokens are polymorphic, without a foreign key.
-            DB::table('transactions')->where('user_id', $user->id)->delete();
-            $user->tokens()->delete();
-            $user->delete();
-        });
+        $request->user()->purge();
 
         return response()->noContent();
     }

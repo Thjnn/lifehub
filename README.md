@@ -44,6 +44,8 @@ npm install
 npm run dev
 ```
 
+Dữ liệu mẫu (gắn nhãn demo): `php artisan db:seed --class=DemoSeeder` → đăng nhập `demo@lifehub.test` / `password`. Chạy lại sẽ làm mới dữ liệu demo theo ngày hiện tại.
+
 Quên mật khẩu ở local: email không gửi thật (`MAIL_MAILER=log`), link đặt lại nằm trong `backend/storage/logs/laravel.log`.
 
 ## Test
