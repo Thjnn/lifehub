@@ -1,5 +1,5 @@
 import { queryOptions } from '@tanstack/react-query'
-import { queryClient } from '@/app/query-client'
+import { clearOfflineData, queryClient } from '@/app/query-client'
 import { api, tokenStore } from '@/lib/api-client'
 
 export type User = {
@@ -52,6 +52,8 @@ function deviceName() {
 
 async function startSession(path: string, body: Record<string, string>) {
   const { data } = await api<AuthResponse>(path, { method: 'POST', body: { ...body, device_name: deviceName() } })
+  // A previous user's token may have expired without a logout — drop their cached data first.
+  await clearOfflineData()
   tokenStore.set(data.token)
   queryClient.setQueryData(meQuery.queryKey, data.user)
 }
@@ -74,7 +76,6 @@ export async function logout() {
     // Token may already be expired or the server unreachable — still sign out locally.
   } finally {
     tokenStore.clear()
-    queryClient.clear()
-    // Phase 4/7: also wipe the persisted query cache and Dexie outbox here (spec §5).
+    await clearOfflineData()
   }
 }

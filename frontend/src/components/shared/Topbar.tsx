@@ -1,7 +1,9 @@
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { LogOut, Plus, Search, Settings } from 'lucide-react'
+import { Download, LogOut, Plus, Search, Settings } from 'lucide-react'
 import { Link, useNavigate } from 'react-router'
 import { toast } from 'sonner'
+import { IosInstallSheet } from '@/components/shared/IosInstallSheet'
 import { NetworkStatus } from '@/components/shared/NetworkStatus'
 import { QuickCreate } from '@/components/shared/QuickCreate'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -15,6 +17,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { logout, meQuery } from '@/features/auth/api'
+import { useInstallPrompt } from '@/hooks/use-install-prompt'
 import { usePageTitle } from '@/hooks/use-page-title'
 
 // "Nguyễn Văn Minh" → "VM"
@@ -30,6 +33,8 @@ export function Topbar() {
   const title = usePageTitle()
   const navigate = useNavigate()
   const { data: user } = useQuery(meQuery)
+  const installer = useInstallPrompt()
+  const [iosHelpOpen, setIosHelpOpen] = useState(false)
 
   async function handleLogout() {
     await logout()
@@ -83,6 +88,12 @@ export function Topbar() {
                 Cài đặt
               </Link>
             </DropdownMenuItem>
+            {(installer.canPrompt || installer.needsIosInstructions) && (
+              <DropdownMenuItem onSelect={installer.canPrompt ? installer.install : () => setIosHelpOpen(true)}>
+                <Download />
+                Cài đặt LIFEHUB
+              </DropdownMenuItem>
+            )}
             <DropdownMenuSeparator />
             <DropdownMenuItem onSelect={handleLogout}>
               <LogOut />
@@ -91,6 +102,7 @@ export function Topbar() {
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+      <IosInstallSheet open={iosHelpOpen} onOpenChange={setIosHelpOpen} />
     </header>
   )
 }

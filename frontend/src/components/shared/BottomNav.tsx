@@ -1,7 +1,9 @@
 import { useState } from 'react'
-import { Ellipsis } from 'lucide-react'
+import { Download, Ellipsis } from 'lucide-react'
 import { NavLink, useLocation } from 'react-router'
+import { IosInstallSheet } from '@/components/shared/IosInstallSheet'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
+import { useInstallPrompt } from '@/hooks/use-install-prompt'
 import { bottomNavItems, moreNavItems } from '@/lib/nav'
 import { cn } from '@/lib/utils'
 
@@ -9,6 +11,8 @@ const itemClass = 'flex flex-col items-center justify-center gap-1 text-[11px] f
 
 export function BottomNav() {
   const [moreOpen, setMoreOpen] = useState(false)
+  const [iosHelpOpen, setIosHelpOpen] = useState(false)
+  const installer = useInstallPrompt()
   const { pathname } = useLocation()
   const moreActive = moreNavItems.some((item) => pathname.startsWith(item.to))
 
@@ -60,9 +64,24 @@ export function BottomNav() {
                 {label}
               </NavLink>
             ))}
+            {(installer.canPrompt || installer.needsIosInstructions) && (
+              <button
+                type="button"
+                onClick={() => {
+                  setMoreOpen(false)
+                  if (installer.canPrompt) installer.install()
+                  else setIosHelpOpen(true)
+                }}
+                className="flex h-12 items-center gap-3 rounded-lg px-3 text-sm font-medium text-primary"
+              >
+                <Download className="size-5" aria-hidden />
+                Cài đặt LIFEHUB
+              </button>
+            )}
           </div>
         </SheetContent>
       </Sheet>
+      <IosInstallSheet open={iosHelpOpen} onOpenChange={setIosHelpOpen} />
     </nav>
   )
 }

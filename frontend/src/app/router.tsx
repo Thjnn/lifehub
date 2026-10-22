@@ -16,8 +16,11 @@ import { ApiError, tokenStore } from '@/lib/api-client'
 // Routes from spec §8. Pages are placeholders until their phase; `handle.title` feeds the topbar.
 const page = (path: string, title: string) => ({ path, element: <ComingSoon />, handle: { title } })
 
-async function requireAuth() {
+export async function requireAuth() {
   if (!tokenStore.get()) return redirect('/login')
+  // Offline: the token can't be checked and a fetch would wait for the network forever.
+  // Render the shell from the restored offline cache instead.
+  if (!navigator.onLine) return null
   try {
     await queryClient.ensureQueryData(meQuery)
   } catch (error) {
