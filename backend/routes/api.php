@@ -5,11 +5,14 @@ use App\Http\Controllers\Api\V1\Auth\AuthController;
 use App\Http\Controllers\Api\V1\Auth\PasswordResetController;
 use App\Http\Controllers\Api\V1\BudgetController;
 use App\Http\Controllers\Api\V1\CategoryController;
+use App\Http\Controllers\Api\V1\DashboardController;
 use App\Http\Controllers\Api\V1\DebtController;
 use App\Http\Controllers\Api\V1\EventController;
 use App\Http\Controllers\Api\V1\FinanceReportController;
+use App\Http\Controllers\Api\V1\SettingsController;
 use App\Http\Controllers\Api\V1\TaskController;
 use App\Http\Controllers\Api\V1\TransactionController;
+use App\Http\Controllers\Api\V1\WeatherController;
 use App\Http\Resources\UserResource;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -37,6 +40,12 @@ Route::prefix('v1')->group(function () {
     Route::middleware('auth:sanctum')->group(function () {
         Route::post('/auth/logout', [AuthController::class, 'logout']);
         Route::get('/me', fn (Request $request) => new UserResource($request->user()->load('settings')));
+        Route::patch('/me/settings', [SettingsController::class, 'update']);
+
+        Route::get('/dashboard', DashboardController::class);
+        Route::get('/weather', [WeatherController::class, 'show']);
+        // Proxies a third-party geocoder — keep it modest.
+        Route::get('/weather/cities', [WeatherController::class, 'cities'])->middleware('throttle:30,1');
 
         // whereUuid: a malformed id is a 404, not a Postgres "invalid input syntax for type uuid" 500.
         Route::get('/tasks', [TaskController::class, 'index']);

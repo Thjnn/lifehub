@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['timezone', 'locale', 'currency', 'theme', 'preferences'])]
+#[Fillable(['timezone', 'locale', 'currency', 'theme', 'preferences', 'city_name', 'latitude', 'longitude'])]
 class UserSetting extends Model
 {
     /**
@@ -18,6 +18,8 @@ class UserSetting extends Model
     {
         return [
             'preferences' => 'array',
+            'latitude' => 'float',
+            'longitude' => 'float',
         ];
     }
 

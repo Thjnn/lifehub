@@ -86,7 +86,7 @@ async function replay() {
 
   if (changed) {
     await Promise.all(
-      [['tasks'], ['transactions'], ['accounts'], ['budgets'], ['reports'], ['debts']].map((queryKey) =>
+      [['tasks'], ['transactions'], ['accounts'], ['budgets'], ['reports'], ['debts'], ['dashboard']].map((queryKey) =>
         queryClient.invalidateQueries({ queryKey }),
       ),
     )

@@ -26,6 +26,7 @@ class EventRequest extends FormRequest
         return [
             'title' => [$required, 'string', 'max:255'],
             'description' => ['sometimes', 'nullable', 'string', 'max:5000'],
+            'location' => ['sometimes', 'nullable', 'string', 'max:255'],
             'start_at' => [$required, 'date'],
             'end_at' => [$required, 'date'],
             'event_type' => [$required, Rule::enum(EventType::class)],

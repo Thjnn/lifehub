@@ -4,6 +4,7 @@ import { ComingSoon } from '@/components/shared/ComingSoon'
 import { FullPageSpinner } from '@/components/shared/FullPageSpinner'
 import { NotFound } from '@/components/shared/NotFound'
 import { meQuery } from '@/features/auth/api'
+import { DashboardPage } from '@/features/dashboard/DashboardPage'
 import { ForgotPasswordPage } from '@/features/auth/ForgotPasswordPage'
 import { LoginPage } from '@/features/auth/LoginPage'
 import { RegisterPage } from '@/features/auth/RegisterPage'
@@ -14,6 +15,7 @@ import { FinanceOverviewPage } from '@/features/finance/FinanceOverviewPage'
 import { ReportsPage } from '@/features/finance/ReportsPage'
 import { TransactionsPage } from '@/features/finance/TransactionsPage'
 import { LandingPage } from '@/features/landing/LandingPage'
+import { PreferencesPage } from '@/features/settings/PreferencesPage'
 import { TasksPage } from '@/features/tasks/TasksPage'
 import { AppLayout } from '@/layouts/AppLayout'
 import { AuthLayout } from '@/layouts/AuthLayout'
@@ -57,7 +59,7 @@ export const router = createBrowserRouter([
     hydrateFallbackElement: <FullPageSpinner />,
     children: [
       { index: true, element: <Navigate to="dashboard" replace /> },
-      page('dashboard', 'Tổng quan'),
+      { path: 'dashboard', element: <DashboardPage />, handle: { title: 'Tổng quan' } },
       // FullCalendar is ~250KB: only downloaded when the calendar is opened.
       {
         path: 'calendar',
@@ -81,7 +83,7 @@ export const router = createBrowserRouter([
         children: [
           { index: true, element: <Navigate to="profile" replace /> },
           page('profile', 'Hồ sơ'),
-          page('preferences', 'Tùy chọn'),
+          { path: 'preferences', element: <PreferencesPage />, handle: { title: 'Tùy chọn' } },
           page('privacy', 'Quyền riêng tư'),
         ],
       },

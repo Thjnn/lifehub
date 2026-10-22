@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['title', 'description', 'start_at', 'end_at', 'event_type', 'status', 'recurrence_rule'])]
+#[Fillable(['title', 'description', 'location', 'start_at', 'end_at', 'event_type', 'status', 'recurrence_rule'])]
 class Event extends Model
 {
     /** @use HasFactory<EventFactory> */

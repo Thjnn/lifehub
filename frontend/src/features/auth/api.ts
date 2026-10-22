@@ -2,6 +2,8 @@ import { queryOptions } from '@tanstack/react-query'
 import { clearOfflineData, queryClient } from '@/app/query-client'
 import { api, tokenStore } from '@/lib/api-client'
 
+export type City = { name: string; latitude: number; longitude: number }
+
 export type User = {
   id: number
   name: string
@@ -12,6 +14,7 @@ export type User = {
     currency: string
     theme: string
     preferences: Record<string, unknown>
+    city: City | null // weather location, chosen in Settings
   }
 }
 

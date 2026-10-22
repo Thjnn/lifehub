@@ -27,6 +27,7 @@ class EventOccurrenceResource extends JsonResource
             'id' => $event->id,
             'title' => $event->title,
             'description' => $event->description,
+            'location' => $event->location,
             'event_type' => $event->event_type,
             'status' => $event->status,
             'start_at' => $start->toIso8601String(),

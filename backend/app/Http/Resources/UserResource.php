@@ -24,6 +24,12 @@ class UserResource extends JsonResource
                 'currency' => $this->settings->currency,
                 'theme' => $this->settings->theme,
                 'preferences' => $this->settings->preferences ?? (object) [],
+                // City for the weather forecast (spec §15.5); null until chosen in Settings
+                'city' => $this->settings->city_name === null ? null : [
+                    'name' => $this->settings->city_name,
+                    'latitude' => $this->settings->latitude,
+                    'longitude' => $this->settings->longitude,
+                ],
             ]),
         ];
     }

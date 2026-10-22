@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Repeat as RepeatIcon, Trash2 } from 'lucide-react'
+import { MapPin, Repeat as RepeatIcon, Trash2 } from 'lucide-react'
 import { Controller, useForm, useWatch } from 'react-hook-form'
 import { toast } from 'sonner'
 import { z } from 'zod'
@@ -25,11 +25,13 @@ import { useIsDesktop } from '@/hooks/use-media-query'
 import { useOnlineStatus } from '@/hooks/use-online-status'
 import { fromDateTimeLocal, toDateTimeLocal } from '@/lib/format'
 import { applyServerErrors, zodResolver } from '@/lib/form'
+import { mapsUrl } from '@/lib/maps'
 
 const schema = z
   .object({
     title: z.string().trim().min(1, 'Vui lòng nhập tên sự kiện').max(255, 'Tối đa 255 ký tự'),
     description: z.string().max(5000, 'Tối đa 5000 ký tự'),
+    location: z.string().max(255, 'Tối đa 255 ký tự'),
     start: z.string().min(1, 'Chọn giờ bắt đầu'),
     end: z.string().min(1, 'Chọn giờ kết thúc'),
     event_type: z.enum(['study', 'work', 'workout', 'rest', 'personal']),
@@ -102,6 +104,7 @@ function EventForm({ occurrence, defaults, onDone }: { occurrence?: Occurrence; 
     defaultValues: {
       title: occurrence?.title ?? '',
       description: occurrence?.description ?? '',
+      location: occurrence?.location ?? '',
       // Editing changes the whole series, so the form shows the series' first occurrence.
       start: toDateTimeLocal(occurrence?.series_start_at ?? slot.start.toISOString()),
       end: toDateTimeLocal(occurrence?.series_end_at ?? slot.end.toISOString()),
@@ -112,14 +115,16 @@ function EventForm({ occurrence, defaults, onDone }: { occurrence?: Occurrence; 
     },
   })
   const repeat = useWatch({ control, name: 'repeat' })
+  const location = useWatch({ control, name: 'location' })
 
-  const onSubmit = handleSubmit(async ({ start, end, repeat, until, description, ...values }) => {
+  const onSubmit = handleSubmit(async ({ start, end, repeat, until, description, location, ...values }) => {
     try {
       const { meta } = await saveEvent.mutateAsync({
         id: occurrence?.id,
         input: {
           ...values,
           description: description.trim() || null,
+          location: location.trim() || null,
           start_at: fromDateTimeLocal(start)!,
           end_at: fromDateTimeLocal(end)!,
           recurrence_rule: buildRule(repeat, until),
@@ -161,6 +166,20 @@ function EventForm({ occurrence, defaults, onDone }: { occurrence?: Occurrence; 
       <div className="grid gap-3 sm:grid-cols-2">
         <TextField label="Bắt đầu" type="datetime-local" error={errors.start?.message} {...register('start')} />
         <TextField label="Kết thúc" type="datetime-local" error={errors.end?.message} {...register('end')} />
+      </div>
+      <div className="flex flex-col gap-1.5">
+        <TextField label="Địa điểm" placeholder="VD: Thư viện trường, California Fitness Q1" error={errors.location?.message} {...register('location')} />
+        {location.trim() && (
+          <a
+            href={mapsUrl(location.trim())}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-1 self-start text-sm text-primary hover:underline"
+          >
+            <MapPin className="size-4" aria-hidden />
+            Mở bản đồ
+          </a>
+        )}
       </div>
       <div className="grid grid-cols-2 gap-3">
         <Controller

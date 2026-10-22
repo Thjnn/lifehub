@@ -11,6 +11,7 @@ export type Occurrence = {
   id: number
   title: string
   description: string | null
+  location: string | null
   event_type: EventType
   status: EventStatus
   start_at: string
@@ -23,6 +24,7 @@ export type Occurrence = {
 export type EventInput = {
   title: string
   description: string | null
+  location: string | null
   start_at: string
   end_at: string
   event_type: EventType
