@@ -7,20 +7,44 @@ import listPlugin from '@fullcalendar/list'
 import FullCalendar from '@fullcalendar/react'
 import timeGridPlugin from '@fullcalendar/timegrid'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
-import { Plus } from 'lucide-react'
+import { Moon, Plus } from 'lucide-react'
 import { useSearchParams } from 'react-router'
 import { Button } from '@/components/ui/button'
 import { calendarTasksQuery, eventsQuery, type EventType, type Occurrence } from '@/features/calendar/api'
 import { EventFormSheet, type NewEventDefaults } from '@/features/calendar/EventFormSheet'
 import { eventTypeColor, eventTypeOptions } from '@/features/calendar/labels'
+import { LunarDayCell, LunarDayHeader } from '@/features/calendar/lunar-render'
 import type { Task } from '@/features/tasks/api'
 import { isOverdue } from '@/features/tasks/labels'
 import { TaskFormSheet } from '@/features/tasks/TaskFormSheet'
 import { useIsDesktop } from '@/hooks/use-media-query'
 import { useOnlineStatus } from '@/hooks/use-online-status'
+import { formatLunar, lunarYearName, toLunar } from '@/lib/lunar'
 import { cn } from '@/lib/utils'
 
 type Range = { from: string; to: string }
+
+// Per-device preference; storage can be unavailable (private mode), so fall back to "on".
+const LUNAR_KEY = 'lifehub.calendar.lunar'
+function readLunarPref() {
+  try {
+    return localStorage.getItem(LUNAR_KEY) !== 'off'
+  } catch {
+    return true
+  }
+}
+function writeLunarPref(on: boolean) {
+  try {
+    localStorage.setItem(LUNAR_KEY, on ? 'on' : 'off')
+  } catch {
+    // ignore
+  }
+}
+
+function todayLunarCaption() {
+  const lunar = toLunar(new Date())
+  return `Hôm nay ${formatLunar(lunar)} âm lịch, năm ${lunarYearName(lunar.year)}`
+}
 
 export function CalendarPage() {
   const online = useOnlineStatus()
@@ -33,6 +57,8 @@ export function CalendarPage() {
   const tasks = useQuery({ ...calendarTasksQuery(range?.from ?? '', range?.to ?? ''), enabled: !!range, placeholderData: keepPreviousData })
 
   const [hiddenTypes, setHiddenTypes] = useState<EventType[]>([])
+  const [showLunar, setShowLunar] = useState(readLunarPref)
+  const [lunarCaption] = useState(todayLunarCaption)
   const [editing, setEditing] = useState<Occurrence>()
   const [editingTask, setEditingTask] = useState<Task>()
   const [newSlot, setNewSlot] = useState<NewEventDefaults>()
@@ -115,6 +141,21 @@ export function CalendarPage() {
             </button>
           )
         })}
+        <button
+          type="button"
+          aria-pressed={showLunar}
+          onClick={() => {
+            writeLunarPref(!showLunar)
+            setShowLunar(!showLunar)
+          }}
+          className={cn(
+            'inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-colors',
+            showLunar ? 'border-primary/40 bg-primary/10 text-primary' : 'text-muted-foreground',
+          )}
+        >
+          <Moon className="size-3.5" aria-hidden />
+          Âm lịch
+        </button>
         <Button
           className="ml-auto"
           disabled={!online}
@@ -130,6 +171,7 @@ export function CalendarPage() {
         </Button>
       </div>
 
+      {showLunar && <p className="-mt-1 text-xs text-muted-foreground">{lunarCaption}</p>}
       {events.isError && <p className="text-sm text-destructive">{events.error.message}</p>}
 
       <div className={cn('lh-calendar rounded-xl border bg-card p-2 sm:p-4', (events.isFetching || tasks.isFetching) && 'opacity-80')}>
@@ -152,6 +194,11 @@ export function CalendarPage() {
           eventTimeFormat={{ hour: '2-digit', minute: '2-digit', hour12: false }}
           slotLabelFormat={{ hour: '2-digit', minute: '2-digit', hour12: false }}
           noEventsText="Không có sự kiện nào"
+          // List view: one "Thứ Hai, 02/11" header (no side text) so the lunar date fits beside it.
+          listDayFormat={{ weekday: 'long', day: '2-digit', month: '2-digit' }}
+          listDaySideFormat={false}
+          dayCellContent={(arg) => <LunarDayCell arg={arg} showLunar={showLunar} />}
+          dayHeaderContent={(arg) => <LunarDayHeader arg={arg} showLunar={showLunar} />}
           events={calendarItems}
           datesSet={handleDatesSet}
           eventClick={handleEventClick}
