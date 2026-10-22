@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\V1\Auth\AuthController;
 use App\Http\Controllers\Api\V1\Auth\PasswordResetController;
+use App\Http\Controllers\Api\V1\EventController;
 use App\Http\Controllers\Api\V1\TaskController;
 use App\Http\Resources\UserResource;
 use Illuminate\Http\Request;
@@ -36,5 +37,10 @@ Route::prefix('v1')->group(function () {
         Route::put('/tasks/{id}', [TaskController::class, 'upsert'])->whereUuid('id');
         Route::post('/tasks/{task}/complete', [TaskController::class, 'complete'])->whereUuid('task');
         Route::delete('/tasks/{task}', [TaskController::class, 'destroy'])->whereUuid('task');
+
+        Route::get('/events', [EventController::class, 'index']);
+        Route::post('/events', [EventController::class, 'store']);
+        Route::patch('/events/{event}', [EventController::class, 'update'])->whereNumber('event');
+        Route::delete('/events/{event}', [EventController::class, 'destroy'])->whereNumber('event');
     });
 });

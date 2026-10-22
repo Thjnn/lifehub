@@ -35,6 +35,17 @@ function trackSlow(delta: 1 | -1) {
   listeners.forEach((listener) => listener())
 }
 
+// Laravel reads arrays as status[]=a&status[]=b and booleans as 1/0.
+export function toQuery(params: Record<string, string | number | boolean | string[] | undefined>) {
+  const query = new URLSearchParams()
+  for (const [key, value] of Object.entries(params)) {
+    if (value === undefined) continue
+    if (Array.isArray(value)) value.forEach((item) => query.append(`${key}[]`, item))
+    else query.set(key, typeof value === 'boolean' ? (value ? '1' : '0') : String(value))
+  }
+  return query.toString()
+}
+
 function messageFor(status: number, serverMessage?: string) {
   if (status === 429) return 'Bạn thao tác quá nhanh, vui lòng thử lại sau ít phút.'
   if (status >= 500) return 'Máy chủ đang gặp lỗi, vui lòng thử lại sau.'

@@ -1,6 +1,6 @@
 import { infiniteQueryOptions, useMutation, useQueryClient, type InfiniteData } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { api } from '@/lib/api-client'
+import { api, toQuery } from '@/lib/api-client'
 
 export type TaskPriority = 'low' | 'medium' | 'high' | 'urgent'
 export type TaskStatus = 'todo' | 'in_progress' | 'completed' | 'cancelled'
@@ -33,17 +33,6 @@ type TaskPage = { data: Task[]; meta: { current_page: number; last_page: number;
 export const taskKeys = {
   all: ['tasks'] as const,
   list: (filters: TaskFilters) => ['tasks', 'list', filters] as const,
-}
-
-// Laravel reads arrays as status[]=a&status[]=b and booleans as 1/0.
-function toQuery(params: Record<string, string | number | boolean | string[] | undefined>) {
-  const query = new URLSearchParams()
-  for (const [key, value] of Object.entries(params)) {
-    if (value === undefined) continue
-    if (Array.isArray(value)) value.forEach((item) => query.append(`${key}[]`, item))
-    else query.set(key, typeof value === 'boolean' ? (value ? '1' : '0') : String(value))
-  }
-  return query.toString()
 }
 
 export const tasksQuery = (filters: TaskFilters) =>

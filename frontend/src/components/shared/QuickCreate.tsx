@@ -12,7 +12,7 @@ import {
 // `to` opens that page's create form via ?new=1; actions without one arrive in later phases.
 const actions = [
   { label: 'Công việc', icon: ListTodo, to: '/app/tasks?new=1' },
-  { label: 'Sự kiện', icon: CalendarPlus, to: undefined },
+  { label: 'Sự kiện', icon: CalendarPlus, to: '/app/calendar?new=1' },
   { label: 'Giao dịch', icon: Wallet, to: undefined },
 ]
 

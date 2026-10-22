@@ -100,3 +100,64 @@
     @apply font-sans;
   }
 }
+
+/* FullCalendar → design tokens. ".fc.fc" outranks the CSS FullCalendar injects at runtime. */
+.fc.fc {
+  --fc-border-color: var(--border);
+  --fc-page-bg-color: var(--card);
+  --fc-neutral-bg-color: var(--muted);
+  --fc-list-event-hover-bg-color: var(--accent);
+  --fc-today-bg-color: color-mix(in oklab, var(--primary) 8%, transparent);
+  --fc-now-indicator-color: var(--destructive);
+  --fc-button-text-color: var(--foreground);
+  --fc-button-bg-color: var(--card);
+  --fc-button-border-color: var(--border);
+  --fc-button-hover-bg-color: var(--accent);
+  --fc-button-hover-border-color: var(--border);
+  --fc-button-active-bg-color: var(--primary);
+  --fc-button-active-border-color: var(--primary);
+  font-size: 0.875rem;
+}
+.fc.fc .fc-button {
+  border-radius: 0.5rem;
+  box-shadow: none;
+  font-size: 0.8125rem;
+  text-transform: none;
+}
+.fc.fc .fc-button-active {
+  color: var(--primary-foreground);
+}
+.fc.fc .fc-toolbar-title {
+  font-size: 1rem;
+  font-weight: 600;
+}
+.fc.fc a {
+  color: inherit;
+  text-decoration: none;
+}
+.fc.fc .fc-col-header-cell-cushion,
+.fc.fc .fc-daygrid-day-number,
+.fc.fc .fc-timegrid-slot-label {
+  color: var(--muted-foreground);
+}
+.fc.fc .fc-list-day-cushion {
+  background: var(--muted);
+}
+.fc.fc .fc-event {
+  cursor: pointer;
+}
+/* Tasks: outlined items, distinct from filled events */
+.fc.fc .lh-task .fc-daygrid-event-dot,
+.fc.fc .lh-task .fc-list-event-dot {
+  border-color: var(--foreground);
+  border-radius: 2px;
+}
+.fc.fc .lh-overdue,
+.fc.fc .lh-overdue .fc-event-title {
+  color: var(--destructive);
+}
+.fc.fc .lh-done .fc-event-title,
+.fc.fc .lh-cancelled .fc-event-title {
+  text-decoration: line-through;
+  opacity: 0.7;
+}

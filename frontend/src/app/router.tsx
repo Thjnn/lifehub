@@ -53,7 +53,12 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: <Navigate to="dashboard" replace /> },
       page('dashboard', 'Tổng quan'),
-      page('calendar', 'Lịch'),
+      // FullCalendar is ~250KB: only downloaded when the calendar is opened.
+      {
+        path: 'calendar',
+        lazy: async () => ({ Component: (await import('@/features/calendar/CalendarPage')).CalendarPage }),
+        handle: { title: 'Lịch' },
+      },
       { path: 'tasks', element: <TasksPage />, handle: { title: 'Công việc' } },
       {
         path: 'finance',
