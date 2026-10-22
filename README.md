@@ -4,6 +4,17 @@ Personal Life OS: quản lý lịch, công việc, tài chính kèm AI Coach. PW
 
 **Bản chạy thử:** https://lifehub-frontend-mu.vercel.app · API: https://lifehub-epzt.onrender.com/api/health (Render free ngủ sau ~15 phút, lần đầu mở mất 30–60 giây).
 
+## Tính năng
+
+- **Công việc & lịch:** CRUD, lọc, lịch tháng/tuần/ngày/danh sách, sự kiện lặp (RRULE), lịch âm, địa điểm + nút mở bản đồ.
+- **Tài chính:** tài khoản, danh mục, giao dịch (thu/chi/chuyển khoản), ngân sách, báo cáo tháng, khoản nợ/trả góp kiểu SPayLater (hạn mức, khả dụng, cần trả).
+- **Tổng quan:** việc hôm nay/quá hạn, chi tiêu tháng, thời tiết (Open-Meteo, gọi từ trình duyệt).
+- **AI Coach (Gemini):** briefing mỗi ngày, chat trả lời từ dữ liệu thật; AI chỉ *đề xuất* tạo việc/sự kiện, người dùng phải xác nhận; không có quyền ghi giao dịch.
+- **PWA offline:** cài được, xem dữ liệu cũ khi mất mạng, ghi offline rồi tự đồng bộ (outbox).
+- **Quyền riêng tư:** xuất toàn bộ dữ liệu JSON, xoá cache trên máy, xoá tài khoản.
+
+Stack: Laravel 13 + Sanctum + PostgreSQL (Supabase) · React 19 + TypeScript + Vite + TanStack Query + shadcn/ui · Render + Vercel, tất cả gói miễn phí.
+
 ## Yêu cầu
 
 - PHP 8.3 + Composer (bật `pdo_pgsql`)
@@ -34,6 +45,24 @@ npm run dev
 ```
 
 Quên mật khẩu ở local: email không gửi thật (`MAIL_MAILER=log`), link đặt lại nằm trong `backend/storage/logs/laravel.log`.
+
+## Test
+
+```sh
+cd backend && php vendor/bin/phpunit                 # SQLite in-memory
+DB_CONNECTION=pgsql DB_DATABASE=lifehub_test DB_PORT=5433 php vendor/bin/phpunit   # Postgres thật
+cd frontend && npm run lint && npm test
+```
+
+CI (`.github/workflows/ci.yml`) chạy cả hai; sau mỗi lần deploy, `smoke.yml` kiểm tra bản production.
+
+## Tài liệu API
+
+OpenAPI: [`docs/openapi.json`](docs/openapi.json) (mở bằng [Swagger Editor](https://editor.swagger.io) hoặc Postman). Khi chạy local, xem trực tiếp ở http://localhost:8000/docs/api. Sinh lại sau khi đổi API:
+
+```sh
+cd backend && php artisan scramble:export --path=../docs/openapi.json
+```
 
 ## Kiểm tra PWA
 
@@ -80,6 +109,8 @@ Thứ tự: Supabase → Render → Vercel → quay lại Render sửa `FRONTEND
 
 Mail (tùy chọn, cần cho quên mật khẩu): tạo tài khoản [Brevo](https://brevo.com), xác thực địa chỉ gửi, lấy SMTP key → thêm `MAIL_MAILER=smtp`, `MAIL_HOST=smtp-relay.brevo.com`, `MAIL_PORT=587`, `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_FROM_ADDRESS`.
 
+AI Coach (tùy chọn): `GEMINI_API_KEY` lấy ở [AI Studio](https://aistudio.google.com/apikey). Mặc định dùng `gemini-flash-lite-latest` (gói miễn phí nhiều lượt/ngày nhất), hết lượt thì tự chuyển sang `gemini-3.8-flash`; đổi bằng `GEMINI_MODEL` / `GEMINI_FALLBACK_MODEL`. Hết cả hai thì AI tạm ngưng tới khi Google reset hạn mức trong ngày.
+
 Deploy xong, mở `https://<tên-service>.onrender.com/api/health` → `{"status":"ok"}`. Migration tự chạy khi container khởi động.
 
 ### 3. Vercel (frontend)
@@ -90,3 +121,16 @@ Deploy xong, mở `https://<tên-service>.onrender.com/api/health` → `{"status
 
 ### 4. Keepalive
 GitHub repo → Settings → Secrets and variables → Actions → **Variables** → thêm `API_HEALTH_URL` = `https://<tên-service>.onrender.com/api/health`. Workflow `keepalive.yml` ping mỗi ngày để Supabase không bị pause.
+
+### 5. Backup
+`backup.yml` chạy `pg_dump` mỗi tuần, **mã hoá** (repo public nên artifact ai cũng tải được) rồi lưu làm artifact 30 ngày. Thêm 2 **Secrets** trong GitHub repo:
+
+- `SUPABASE_DB_URL`: URI Session pooler ở bước 1.
+- `BACKUP_PASSPHRASE`: chuỗi ngẫu nhiên dài, lưu trong trình quản lý mật khẩu. Mất nó là không mở được bản backup.
+
+Chạy thử: tab Actions → Backup → Run workflow. Khôi phục:
+
+```sh
+gpg --decrypt lifehub-YYYY-MM-DD.dump.gpg > lifehub.dump
+pg_restore --no-owner --clean --if-exists -d "<DB_URL>" lifehub.dump
+```

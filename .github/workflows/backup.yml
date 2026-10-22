@@ -2,7 +2,7 @@ name: Backup
 
 # Weekly pg_dump of Supabase (free tier has no downloadable backups), kept as a workflow artifact.
 # The repo is public, so the dump is encrypted before upload: artifacts of public repos can be downloaded.
-# Restore: gpg --decrypt lifehub-*.dump.gpg > lifehub.dump && pg_restore --no-owner -d "$DATABASE_URL" lifehub.dump
+# Restore: see README → Backup.
 on:
   schedule:
     - cron: '0 19 * * 0' # Monday 02:00 Vietnam time

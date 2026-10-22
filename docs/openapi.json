@@ -1,0 +1,3738 @@
+{
+    "openapi": "3.1.2",
+    "info": {
+        "title": "LIFEHUB",
+        "version": "0.0.1"
+    },
+    "servers": [
+        {
+            "url": "http://localhost:8000/api"
+        }
+    ],
+    "paths": {
+        "/health": {
+            "get": {
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "const": "ok"
+                                        }
+                                    },
+                                    "required": [
+                                        "status"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "503": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "const": "error"
+                                        },
+                                        "database": {
+                                            "type": "string",
+                                            "const": "down"
+                                        }
+                                    },
+                                    "required": [
+                                        "status",
+                                        "database"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/me": {
+            "get": {
+                "responses": {
+                    "200": {
+                        "description": "`UserResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "allOf": [
+                                                {
+                                                    "$ref": "#/components/schemas/UserResource"
+                                                },
+                                                {
+                                                    "type": "object",
+                                                    "required": [
+                                                        "settings"
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "privacy.destroy",
+                "tags": [
+                    "Privacy"
+                ],
+                "parameters": [
+                    {
+                        "name": "password",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No content"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/v1/accounts": {
+            "get": {
+                "operationId": "account.index",
+                "tags": [
+                    "Account"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Array of `AccountResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/AccountResource"
+                                            }
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            },
+            "post": {
+                "operationId": "account.store",
+                "tags": [
+                    "Account"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/AccountRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "`AccountResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/AccountResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/v1/accounts/{account}": {
+            "patch": {
+                "operationId": "account.update",
+                "tags": [
+                    "Account"
+                ],
+                "parameters": [
+                    {
+                        "name": "account",
+                        "in": "path",
+                        "required": true,
+                        "description": "The account ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/AccountRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "`AccountResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/AccountResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "account.destroy",
+                "tags": [
+                    "Account"
+                ],
+                "parameters": [
+                    {
+                        "name": "account",
+                        "in": "path",
+                        "required": true,
+                        "description": "The account ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No content"
+                    },
+                    "409": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "examples": [
+                                                "T\u00e0i kho\u1ea3n \u0111\u00e3 c\u00f3 giao d\u1ecbch. H\u00e3y \u1ea9n t\u00e0i kho\u1ea3n thay v\u00ec xo\u00e1."
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/v1/ai/briefing": {
+            "get": {
+                "operationId": "ai.briefing",
+                "tags": [
+                    "Ai"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "properties": {
+                                                "date": {
+                                                    "type": "string"
+                                                },
+                                                "content": {
+                                                    "type": "string"
+                                                },
+                                                "generated_at": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                }
+                                            },
+                                            "required": [
+                                                "date",
+                                                "content",
+                                                "generated_at"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/v1/ai/briefing/refresh": {
+            "post": {
+                "operationId": "ai.refreshBriefing",
+                "tags": [
+                    "Ai"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "properties": {
+                                                "date": {
+                                                    "type": "string"
+                                                },
+                                                "content": {
+                                                    "type": "string"
+                                                },
+                                                "generated_at": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                }
+                                            },
+                                            "required": [
+                                                "date",
+                                                "content",
+                                                "generated_at"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/v1/ai/chat": {
+            "post": {
+                "operationId": "ai.chat",
+                "tags": [
+                    "Ai"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "message": {
+                                        "type": "string",
+                                        "maxLength": 1000
+                                    },
+                                    "conversation_id": {
+                                        "type": [
+                                            "integer",
+                                            "null"
+                                        ]
+                                    }
+                                },
+                                "required": [
+                                    "message"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "properties": {
+                                                "conversation_id": {
+                                                    "type": "integer"
+                                                },
+                                                "reply": {},
+                                                "proposals": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string"
+                                                    }
+                                                },
+                                                "remaining_today": {
+                                                    "type": "integer"
+                                                }
+                                            },
+                                            "required": [
+                                                "conversation_id",
+                                                "reply",
+                                                "proposals",
+                                                "remaining_today"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/v1/ai/conversations/latest": {
+            "get": {
+                "operationId": "ai.latest",
+                "tags": [
+                    "Ai"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "anyOf": [
+                                        {
+                                            "type": "object",
+                                            "properties": {
+                                                "data": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "conversation_id": {
+                                                            "type": "string"
+                                                        },
+                                                        "messages": {
+                                                            "type": "string"
+                                                        },
+                                                        "proposals": {
+                                                            "type": "array",
+                                                            "items": {
+                                                                "type": "string"
+                                                            }
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "conversation_id",
+                                                        "messages",
+                                                        "proposals"
+                                                    ]
+                                                }
+                                            },
+                                            "required": [
+                                                "data"
+                                            ]
+                                        },
+                                        {
+                                            "type": "object",
+                                            "properties": {
+                                                "data": {
+                                                    "type": "null"
+                                                }
+                                            },
+                                            "required": [
+                                                "data"
+                                            ]
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/v1/ai/proposals/{proposal}/confirm": {
+            "post": {
+                "operationId": "ai.confirm",
+                "tags": [
+                    "Ai"
+                ],
+                "parameters": [
+                    {
+                        "name": "proposal",
+                        "in": "path",
+                        "required": true,
+                        "description": "The proposal ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "properties": {
+                                                "proposal": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "id": {
+                                                            "type": "integer"
+                                                        },
+                                                        "action_type": {
+                                                            "type": "string"
+                                                        },
+                                                        "payload": {
+                                                            "type": "array",
+                                                            "items": {}
+                                                        },
+                                                        "status": {
+                                                            "type": "string"
+                                                        },
+                                                        "expires_at": {
+                                                            "type": "string"
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "id",
+                                                        "action_type",
+                                                        "payload",
+                                                        "status",
+                                                        "expires_at"
+                                                    ]
+                                                },
+                                                "created": {
+                                                    "anyOf": [
+                                                        {
+                                                            "type": "object",
+                                                            "properties": {
+                                                                "type": {
+                                                                    "type": "string",
+                                                                    "const": "task"
+                                                                },
+                                                                "id": {
+                                                                    "type": "string"
+                                                                }
+                                                            },
+                                                            "required": [
+                                                                "type",
+                                                                "id"
+                                                            ]
+                                                        },
+                                                        {
+                                                            "type": "object",
+                                                            "properties": {
+                                                                "type": {
+                                                                    "type": "string",
+                                                                    "const": "event"
+                                                                },
+                                                                "id": {
+                                                                    "type": "integer"
+                                                                }
+                                                            },
+                                                            "required": [
+                                                                "type",
+                                                                "id"
+                                                            ]
+                                                        },
+                                                        {
+                                                            "type": "object"
+                                                        }
+                                                    ]
+                                                }
+                                            },
+                                            "required": [
+                                                "proposal",
+                                                "created"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/v1/ai/proposals/{proposal}/reject": {
+            "post": {
+                "operationId": "ai.reject",
+                "tags": [
+                    "Ai"
+                ],
+                "parameters": [
+                    {
+                        "name": "proposal",
+                        "in": "path",
+                        "required": true,
+                        "description": "The proposal ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer"
+                                                },
+                                                "action_type": {
+                                                    "type": "string"
+                                                },
+                                                "payload": {
+                                                    "type": "array",
+                                                    "items": {}
+                                                },
+                                                "status": {
+                                                    "type": "string"
+                                                },
+                                                "expires_at": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "required": [
+                                                "id",
+                                                "action_type",
+                                                "payload",
+                                                "status",
+                                                "expires_at"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/v1/auth/register": {
+            "post": {
+                "operationId": "auth.register",
+                "tags": [
+                    "Auth"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RegisterRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "properties": {
+                                                "token": {
+                                                    "type": "string"
+                                                },
+                                                "user": {
+                                                    "allOf": [
+                                                        {
+                                                            "$ref": "#/components/schemas/UserResource"
+                                                        },
+                                                        {
+                                                            "type": "object",
+                                                            "required": [
+                                                                "settings"
+                                                            ]
+                                                        }
+                                                    ]
+                                                }
+                                            },
+                                            "required": [
+                                                "token",
+                                                "user"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/v1/auth/login": {
+            "post": {
+                "operationId": "auth.login",
+                "tags": [
+                    "Auth"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/LoginRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "properties": {
+                                                "token": {
+                                                    "type": "string"
+                                                },
+                                                "user": {
+                                                    "allOf": [
+                                                        {
+                                                            "$ref": "#/components/schemas/UserResource"
+                                                        },
+                                                        {
+                                                            "type": "object",
+                                                            "required": [
+                                                                "settings"
+                                                            ]
+                                                        }
+                                                    ]
+                                                }
+                                            },
+                                            "required": [
+                                                "token",
+                                                "user"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/v1/auth/logout": {
+            "post": {
+                "operationId": "auth.logout",
+                "tags": [
+                    "Auth"
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No content"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/v1/budgets": {
+            "get": {
+                "operationId": "budget.index",
+                "tags": [
+                    "Budget"
+                ],
+                "parameters": [
+                    {
+                        "name": "month",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "integer"
+                                                    },
+                                                    "category_id": {
+                                                        "type": [
+                                                            "integer",
+                                                            "null"
+                                                        ]
+                                                    },
+                                                    "period_start": {
+                                                        "type": "string"
+                                                    },
+                                                    "period_end": {
+                                                        "type": "string"
+                                                    },
+                                                    "amount": {
+                                                        "type": "string"
+                                                    },
+                                                    "spent": {
+                                                        "type": "string"
+                                                    },
+                                                    "remaining": {
+                                                        "type": "string"
+                                                    },
+                                                    "percent": {
+                                                        "type": "integer",
+                                                        "description": "Whole percent, exact (bcmath): 80 \u2192 warning, 100+ \u2192 over budget"
+                                                    }
+                                                },
+                                                "required": [
+                                                    "id",
+                                                    "category_id",
+                                                    "period_start",
+                                                    "period_end",
+                                                    "amount",
+                                                    "spent",
+                                                    "remaining",
+                                                    "percent"
+                                                ]
+                                            }
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            },
+            "post": {
+                "operationId": "budget.store",
+                "tags": [
+                    "Budget"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "month": {
+                                        "type": "string"
+                                    },
+                                    "category_id": {
+                                        "type": [
+                                            "integer",
+                                            "null"
+                                        ],
+                                        "description": "Only spending can be budgeted: a system or own expense category, or null for the overall budget."
+                                    },
+                                    "amount": {
+                                        "type": "number",
+                                        "maximum": 9999999999999.99
+                                    }
+                                },
+                                "required": [
+                                    "month",
+                                    "amount"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer"
+                                                },
+                                                "category_id": {
+                                                    "type": [
+                                                        "integer",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "period_start": {
+                                                    "type": "string"
+                                                },
+                                                "period_end": {
+                                                    "type": "string"
+                                                },
+                                                "amount": {
+                                                    "type": "string"
+                                                },
+                                                "spent": {
+                                                    "type": "string"
+                                                },
+                                                "remaining": {
+                                                    "type": "string"
+                                                },
+                                                "percent": {
+                                                    "type": "integer",
+                                                    "description": "Whole percent, exact (bcmath): 80 \u2192 warning, 100+ \u2192 over budget"
+                                                }
+                                            },
+                                            "required": [
+                                                "id",
+                                                "category_id",
+                                                "period_start",
+                                                "period_end",
+                                                "amount",
+                                                "spent",
+                                                "remaining",
+                                                "percent"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/v1/budgets/{budget}": {
+            "patch": {
+                "operationId": "budget.update",
+                "tags": [
+                    "Budget"
+                ],
+                "parameters": [
+                    {
+                        "name": "budget",
+                        "in": "path",
+                        "required": true,
+                        "description": "The budget ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "amount": {
+                                        "type": "number",
+                                        "maximum": 9999999999999.99
+                                    }
+                                },
+                                "required": [
+                                    "amount"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer"
+                                                },
+                                                "category_id": {
+                                                    "type": [
+                                                        "integer",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "period_start": {
+                                                    "type": "string"
+                                                },
+                                                "period_end": {
+                                                    "type": "string"
+                                                },
+                                                "amount": {
+                                                    "type": "string"
+                                                },
+                                                "spent": {
+                                                    "type": "string"
+                                                },
+                                                "remaining": {
+                                                    "type": "string"
+                                                },
+                                                "percent": {
+                                                    "type": "integer",
+                                                    "description": "Whole percent, exact (bcmath): 80 \u2192 warning, 100+ \u2192 over budget"
+                                                }
+                                            },
+                                            "required": [
+                                                "id",
+                                                "category_id",
+                                                "period_start",
+                                                "period_end",
+                                                "amount",
+                                                "spent",
+                                                "remaining",
+                                                "percent"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "budget.destroy",
+                "tags": [
+                    "Budget"
+                ],
+                "parameters": [
+                    {
+                        "name": "budget",
+                        "in": "path",
+                        "required": true,
+                        "description": "The budget ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No content"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/v1/categories": {
+            "get": {
+                "operationId": "category.index",
+                "tags": [
+                    "Category"
+                ],
+                "parameters": [
+                    {
+                        "name": "type",
+                        "in": "query",
+                        "schema": {
+                            "$ref": "#/components/schemas/CategoryType"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Array of `CategoryResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/CategoryResource"
+                                            }
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            },
+            "post": {
+                "operationId": "category.store",
+                "tags": [
+                    "Category"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CategoryRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "`CategoryResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/CategoryResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/v1/categories/{category}": {
+            "patch": {
+                "operationId": "category.update",
+                "tags": [
+                    "Category"
+                ],
+                "parameters": [
+                    {
+                        "name": "category",
+                        "in": "path",
+                        "required": true,
+                        "description": "The category ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CategoryRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "`CategoryResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/CategoryResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "category.destroy",
+                "tags": [
+                    "Category"
+                ],
+                "parameters": [
+                    {
+                        "name": "category",
+                        "in": "path",
+                        "required": true,
+                        "description": "The category ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No content"
+                    },
+                    "409": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview."
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/v1/dashboard": {
+            "get": {
+                "operationId": "v1.dashboard",
+                "tags": [
+                    "Dashboard"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "properties": {
+                                                "today": {
+                                                    "type": "string"
+                                                },
+                                                "tasks": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "due_today_total": {
+                                                            "type": "integer",
+                                                            "minimum": 0
+                                                        },
+                                                        "due_today_done": {
+                                                            "type": "integer",
+                                                            "minimum": 0
+                                                        },
+                                                        "overdue_count": {
+                                                            "type": "integer",
+                                                            "minimum": 0
+                                                        },
+                                                        "overdue": {
+                                                            "type": "array",
+                                                            "items": {
+                                                                "$ref": "#/components/schemas/TaskResource"
+                                                            }
+                                                        },
+                                                        "upcoming": {
+                                                            "type": "array",
+                                                            "items": {
+                                                                "$ref": "#/components/schemas/TaskResource"
+                                                            }
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "due_today_total",
+                                                        "due_today_done",
+                                                        "overdue_count",
+                                                        "overdue",
+                                                        "upcoming"
+                                                    ]
+                                                },
+                                                "events_today": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "$ref": "#/components/schemas/EventOccurrenceResource"
+                                                    }
+                                                },
+                                                "finance": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "month": {
+                                                            "type": "string"
+                                                        },
+                                                        "income": {
+                                                            "type": "string"
+                                                        },
+                                                        "expense": {
+                                                            "type": "string"
+                                                        },
+                                                        "budget": {
+                                                            "type": [
+                                                                "object",
+                                                                "null"
+                                                            ],
+                                                            "properties": {
+                                                                "amount": {
+                                                                    "type": "string"
+                                                                },
+                                                                "remaining": {
+                                                                    "type": "string"
+                                                                }
+                                                            },
+                                                            "required": [
+                                                                "amount",
+                                                                "remaining"
+                                                            ]
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "month",
+                                                        "income",
+                                                        "expense",
+                                                        "budget"
+                                                    ]
+                                                },
+                                                "debts_due": {
+                                                    "type": "array",
+                                                    "description": "Unpaid repayments: overdue (last month) and the coming week",
+                                                    "items": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "account_id": {
+                                                                "type": "string"
+                                                            },
+                                                            "account_name": {
+                                                                "type": "string"
+                                                            },
+                                                            "account_type": {
+                                                                "type": "string"
+                                                            },
+                                                            "due_date": {
+                                                                "type": "string"
+                                                            },
+                                                            "amount": {
+                                                                "type": "string"
+                                                            },
+                                                            "overdue": {
+                                                                "type": "string"
+                                                            }
+                                                        },
+                                                        "required": [
+                                                            "account_id",
+                                                            "account_name",
+                                                            "account_type",
+                                                            "due_date",
+                                                            "amount",
+                                                            "overdue"
+                                                        ]
+                                                    }
+                                                }
+                                            },
+                                            "required": [
+                                                "today",
+                                                "tasks",
+                                                "events_today",
+                                                "finance",
+                                                "debts_due"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/v1/debts/due": {
+            "get": {
+                "operationId": "debt.due",
+                "tags": [
+                    "Debt"
+                ],
+                "parameters": [
+                    {
+                        "name": "from",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "to",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "account_id": {
+                                                        "type": "string"
+                                                    },
+                                                    "account_name": {
+                                                        "type": "string"
+                                                    },
+                                                    "account_type": {
+                                                        "type": "string"
+                                                    },
+                                                    "due_date": {
+                                                        "type": "string"
+                                                    },
+                                                    "amount": {
+                                                        "type": "string"
+                                                    },
+                                                    "outstanding": {
+                                                        "type": "string"
+                                                    },
+                                                    "paid": {
+                                                        "type": "string"
+                                                    },
+                                                    "overdue": {
+                                                        "type": "string"
+                                                    }
+                                                },
+                                                "required": [
+                                                    "account_id",
+                                                    "account_name",
+                                                    "account_type",
+                                                    "due_date",
+                                                    "amount",
+                                                    "outstanding",
+                                                    "paid",
+                                                    "overdue"
+                                                ]
+                                            }
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/v1/events": {
+            "get": {
+                "operationId": "event.index",
+                "tags": [
+                    "Event"
+                ],
+                "parameters": [
+                    {
+                        "name": "from",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "date-time"
+                        }
+                    },
+                    {
+                        "name": "to",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "date-time"
+                        }
+                    },
+                    {
+                        "name": "type",
+                        "in": "query",
+                        "schema": {
+                            "$ref": "#/components/schemas/EventType"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Array of `EventOccurrenceResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/EventOccurrenceResource"
+                                            }
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            },
+            "post": {
+                "operationId": "event.store",
+                "tags": [
+                    "Event"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/EventRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "`EventOccurrenceResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/EventOccurrenceResource"
+                                        },
+                                        "meta": {
+                                            "type": "object",
+                                            "properties": {
+                                                "overlaps": {
+                                                    "type": "array",
+                                                    "items": {}
+                                                }
+                                            },
+                                            "required": [
+                                                "overlaps"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "data",
+                                        "meta"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/v1/events/{event}": {
+            "patch": {
+                "operationId": "event.update",
+                "tags": [
+                    "Event"
+                ],
+                "parameters": [
+                    {
+                        "name": "event",
+                        "in": "path",
+                        "required": true,
+                        "description": "The event ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/EventRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "`EventOccurrenceResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/EventOccurrenceResource"
+                                        },
+                                        "meta": {
+                                            "type": "object",
+                                            "properties": {
+                                                "overlaps": {
+                                                    "type": "array",
+                                                    "items": {}
+                                                }
+                                            },
+                                            "required": [
+                                                "overlaps"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "data",
+                                        "meta"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "event.destroy",
+                "tags": [
+                    "Event"
+                ],
+                "parameters": [
+                    {
+                        "name": "event",
+                        "in": "path",
+                        "required": true,
+                        "description": "The event ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No content"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/v1/reports/finance": {
+            "get": {
+                "operationId": "v1.financeReport",
+                "tags": [
+                    "FinanceReport"
+                ],
+                "parameters": [
+                    {
+                        "name": "month",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "properties": {
+                                                "month": {
+                                                    "type": "string"
+                                                },
+                                                "income": {
+                                                    "type": "string"
+                                                },
+                                                "expense": {
+                                                    "type": "string"
+                                                },
+                                                "net": {
+                                                    "type": "string"
+                                                },
+                                                "previous": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "income": {
+                                                            "type": "string"
+                                                        },
+                                                        "expense": {
+                                                            "type": "string"
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "income",
+                                                        "expense"
+                                                    ]
+                                                },
+                                                "by_category": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string"
+                                                    }
+                                                }
+                                            },
+                                            "required": [
+                                                "month",
+                                                "income",
+                                                "expense",
+                                                "net",
+                                                "previous",
+                                                "by_category"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/v1/auth/forgot-password": {
+            "post": {
+                "operationId": "passwordReset.forgot",
+                "tags": [
+                    "PasswordReset"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email"
+                                    }
+                                },
+                                "required": [
+                                    "email"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "const": "N\u1ebfu email t\u1ed3n t\u1ea1i, link \u0111\u1eb7t l\u1ea1i m\u1eadt kh\u1ea9u \u0111\u00e3 \u0111\u01b0\u1ee3c g\u1eedi."
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/v1/auth/reset-password": {
+            "post": {
+                "operationId": "passwordReset.reset",
+                "tags": [
+                    "PasswordReset"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ResetPasswordRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "const": "\u0110\u00e3 \u0111\u1eb7t l\u1ea1i m\u1eadt kh\u1ea9u. H\u00e3y \u0111\u0103ng nh\u1eadp l\u1ea1i."
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/v1/privacy/export": {
+            "get": {
+                "operationId": "privacy.export",
+                "tags": [
+                    "Privacy"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        },
+                        "headers": {
+                            "Content-Disposition": {
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/v1/me/settings": {
+            "patch": {
+                "operationId": "settings.update",
+                "tags": [
+                    "Settings"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "timezone": {
+                                        "type": "string"
+                                    },
+                                    "locale": {
+                                        "type": "string",
+                                        "enum": [
+                                            "vi",
+                                            "en"
+                                        ]
+                                    },
+                                    "theme": {
+                                        "type": "string",
+                                        "enum": [
+                                            "dark",
+                                            "light",
+                                            "system"
+                                        ]
+                                    },
+                                    "city": {
+                                        "type": "object",
+                                        "description": "City from GET /weather/cities; null clears it. Name and coordinates travel together.",
+                                        "properties": {
+                                            "name": {
+                                                "type": "string",
+                                                "maxLength": 120
+                                            },
+                                            "latitude": {
+                                                "type": "number",
+                                                "minimum": -90,
+                                                "maximum": 90
+                                            },
+                                            "longitude": {
+                                                "type": "number",
+                                                "minimum": -180,
+                                                "maximum": 180
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "`UserResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "allOf": [
+                                                {
+                                                    "$ref": "#/components/schemas/UserResource"
+                                                },
+                                                {
+                                                    "type": "object",
+                                                    "required": [
+                                                        "settings"
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/v1/tasks": {
+            "get": {
+                "operationId": "task.index",
+                "tags": [
+                    "Task"
+                ],
+                "parameters": [
+                    {
+                        "name": "status[]",
+                        "in": "query",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/components/schemas/TaskStatus"
+                            }
+                        }
+                    },
+                    {
+                        "name": "priority[]",
+                        "in": "query",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/components/schemas/TaskPriority"
+                            }
+                        }
+                    },
+                    {
+                        "name": "due_from",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "format": "date-time"
+                        }
+                    },
+                    {
+                        "name": "due_to",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "format": "date-time"
+                        }
+                    },
+                    {
+                        "name": "overdue",
+                        "in": "query",
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    },
+                    {
+                        "name": "sort",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "due_at",
+                                "priority",
+                                "created_at"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 100
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Paginated set of `TaskResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/TaskResource"
+                                            }
+                                        },
+                                        "links": {
+                                            "type": "object",
+                                            "properties": {
+                                                "first": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "last": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "prev": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "next": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                }
+                                            },
+                                            "required": [
+                                                "first",
+                                                "last",
+                                                "prev",
+                                                "next"
+                                            ]
+                                        },
+                                        "meta": {
+                                            "type": "object",
+                                            "properties": {
+                                                "current_page": {
+                                                    "type": "integer",
+                                                    "minimum": 1
+                                                },
+                                                "from": {
+                                                    "type": [
+                                                        "integer",
+                                                        "null"
+                                                    ],
+                                                    "minimum": 1
+                                                },
+                                                "last_page": {
+                                                    "type": "integer",
+                                                    "minimum": 1
+                                                },
+                                                "links": {
+                                                    "type": "array",
+                                                    "description": "Generated paginator links.",
+                                                    "items": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "url": {
+                                                                "type": [
+                                                                    "string",
+                                                                    "null"
+                                                                ]
+                                                            },
+                                                            "label": {
+                                                                "type": "string"
+                                                            },
+                                                            "active": {
+                                                                "type": "boolean"
+                                                            }
+                                                        },
+                                                        "required": [
+                                                            "url",
+                                                            "label",
+                                                            "active"
+                                                        ]
+                                                    }
+                                                },
+                                                "path": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ],
+                                                    "description": "Base path for paginator generated URLs."
+                                                },
+                                                "per_page": {
+                                                    "type": "integer",
+                                                    "description": "Number of items shown per page.",
+                                                    "minimum": 0
+                                                },
+                                                "to": {
+                                                    "type": [
+                                                        "integer",
+                                                        "null"
+                                                    ],
+                                                    "description": "Number of the last item in the slice.",
+                                                    "minimum": 1
+                                                },
+                                                "total": {
+                                                    "type": "integer",
+                                                    "description": "Total number of items being paginated.",
+                                                    "minimum": 0
+                                                }
+                                            },
+                                            "required": [
+                                                "current_page",
+                                                "from",
+                                                "last_page",
+                                                "links",
+                                                "path",
+                                                "per_page",
+                                                "to",
+                                                "total"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "data",
+                                        "links",
+                                        "meta"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/v1/tasks/{id}": {
+            "put": {
+                "operationId": "task.upsert",
+                "summary": "Idempotent create-or-update keyed by the client's UUID: retrying the same request never duplicates (spec \u00a76.3)",
+                "tags": [
+                    "Task"
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpsertTaskRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "anyOf": [
+                                        {
+                                            "type": "object",
+                                            "properties": {
+                                                "message": {
+                                                    "type": "string",
+                                                    "const": "C\u00f4ng vi\u1ec7c \u0111\u00e3 \u0111\u01b0\u1ee3c s\u1eeda \u1edf n\u01a1i kh\u00e1c sau thay \u0111\u1ed5i n\u00e0y."
+                                                },
+                                                "data": {
+                                                    "$ref": "#/components/schemas/TaskResource"
+                                                }
+                                            },
+                                            "required": [
+                                                "message",
+                                                "data"
+                                            ]
+                                        },
+                                        {
+                                            "type": "object",
+                                            "properties": {
+                                                "message": {
+                                                    "type": "string",
+                                                    "description": "Error overview.",
+                                                    "examples": [
+                                                        "C\u00f4ng vi\u1ec7c n\u00e0y \u0111\u00e3 b\u1ecb xo\u00e1."
+                                                    ]
+                                                }
+                                            },
+                                            "required": [
+                                                "message"
+                                            ]
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/v1/tasks/{task}/complete": {
+            "post": {
+                "operationId": "task.complete",
+                "tags": [
+                    "Task"
+                ],
+                "parameters": [
+                    {
+                        "name": "task",
+                        "in": "path",
+                        "required": true,
+                        "description": "The task ID",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`TaskResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/TaskResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/v1/tasks/{task}": {
+            "delete": {
+                "operationId": "task.destroy",
+                "tags": [
+                    "Task"
+                ],
+                "parameters": [
+                    {
+                        "name": "task",
+                        "in": "path",
+                        "required": true,
+                        "description": "The task ID",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No content"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/v1/transactions": {
+            "get": {
+                "operationId": "transaction.index",
+                "tags": [
+                    "Transaction"
+                ],
+                "parameters": [
+                    {
+                        "name": "month",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "account_id",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "category_id",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "type",
+                        "in": "query",
+                        "schema": {
+                            "$ref": "#/components/schemas/TransactionType"
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 100
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Paginated set of `TransactionResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/TransactionResource"
+                                            }
+                                        },
+                                        "links": {
+                                            "type": "object",
+                                            "properties": {
+                                                "first": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "last": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "prev": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "next": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                }
+                                            },
+                                            "required": [
+                                                "first",
+                                                "last",
+                                                "prev",
+                                                "next"
+                                            ]
+                                        },
+                                        "meta": {
+                                            "type": "object",
+                                            "properties": {
+                                                "current_page": {
+                                                    "type": "integer",
+                                                    "minimum": 1
+                                                },
+                                                "from": {
+                                                    "type": [
+                                                        "integer",
+                                                        "null"
+                                                    ],
+                                                    "minimum": 1
+                                                },
+                                                "last_page": {
+                                                    "type": "integer",
+                                                    "minimum": 1
+                                                },
+                                                "links": {
+                                                    "type": "array",
+                                                    "description": "Generated paginator links.",
+                                                    "items": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "url": {
+                                                                "type": [
+                                                                    "string",
+                                                                    "null"
+                                                                ]
+                                                            },
+                                                            "label": {
+                                                                "type": "string"
+                                                            },
+                                                            "active": {
+                                                                "type": "boolean"
+                                                            }
+                                                        },
+                                                        "required": [
+                                                            "url",
+                                                            "label",
+                                                            "active"
+                                                        ]
+                                                    }
+                                                },
+                                                "path": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ],
+                                                    "description": "Base path for paginator generated URLs."
+                                                },
+                                                "per_page": {
+                                                    "type": "integer",
+                                                    "description": "Number of items shown per page.",
+                                                    "minimum": 0
+                                                },
+                                                "to": {
+                                                    "type": [
+                                                        "integer",
+                                                        "null"
+                                                    ],
+                                                    "description": "Number of the last item in the slice.",
+                                                    "minimum": 1
+                                                },
+                                                "total": {
+                                                    "type": "integer",
+                                                    "description": "Total number of items being paginated.",
+                                                    "minimum": 0
+                                                }
+                                            },
+                                            "required": [
+                                                "current_page",
+                                                "from",
+                                                "last_page",
+                                                "links",
+                                                "path",
+                                                "per_page",
+                                                "to",
+                                                "total"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "data",
+                                        "links",
+                                        "meta"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/v1/transactions/{id}": {
+            "put": {
+                "operationId": "transaction.upsert",
+                "summary": "Idempotent create-or-update keyed by the client's UUID (spec \u00a76.3) \u2014 works offline-first in Phase 7",
+                "tags": [
+                    "Transaction"
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpsertTransactionRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "examples": [
+                                                "Giao d\u1ecbch n\u00e0y \u0111\u00e3 b\u1ecb xo\u00e1."
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/v1/transactions/{transaction}": {
+            "delete": {
+                "operationId": "transaction.destroy",
+                "summary": "Online only: deleting money records offline could conflict (spec \u00a76.2)",
+                "tags": [
+                    "Transaction"
+                ],
+                "parameters": [
+                    {
+                        "name": "transaction",
+                        "in": "path",
+                        "required": true,
+                        "description": "The transaction ID",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No content"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "AccountRequest": {
+                "type": "object",
+                "description": "POST requires the fields; PATCH accepts any subset.",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "maxLength": 100
+                    },
+                    "account_type": {
+                        "$ref": "#/components/schemas/AccountType"
+                    },
+                    "opening_balance": {
+                        "type": "number",
+                        "description": "May be negative (e.g. a debt); NUMERIC(15,2) range.",
+                        "minimum": -9999999999999.99,
+                        "maximum": 9999999999999.99
+                    },
+                    "is_active": {
+                        "type": "boolean"
+                    },
+                    "due_date": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "date",
+                        "description": "Repayment schedule \u2014 only meaningful for debt accounts (checked in after())."
+                    },
+                    "due_day": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ],
+                        "minimum": 1,
+                        "maximum": 31
+                    },
+                    "installment_amount": {
+                        "type": [
+                            "number",
+                            "null"
+                        ],
+                        "maximum": 9999999999999.99
+                    },
+                    "credit_limit": {
+                        "type": [
+                            "number",
+                            "null"
+                        ],
+                        "description": "Liability only (SPayLater, credit card)",
+                        "maximum": 9999999999999.99
+                    }
+                },
+                "required": [
+                    "name",
+                    "account_type"
+                ],
+                "title": "AccountRequest"
+            },
+            "AccountResource": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "account_type": {
+                        "$ref": "#/components/schemas/AccountType"
+                    },
+                    "currency": {
+                        "type": "string"
+                    },
+                    "opening_balance": {
+                        "type": "string"
+                    },
+                    "balance": {
+                        "type": "string",
+                        "description": "Present when loaded via Account::withBalance()"
+                    },
+                    "is_active": {
+                        "type": "boolean"
+                    },
+                    "due_date": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "due_day": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
+                    },
+                    "installment_amount": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "credit_limit": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    }
+                },
+                "required": [
+                    "id",
+                    "name",
+                    "account_type",
+                    "currency",
+                    "opening_balance",
+                    "is_active",
+                    "due_date",
+                    "due_day",
+                    "installment_amount",
+                    "credit_limit"
+                ],
+                "title": "AccountResource"
+            },
+            "AccountType": {
+                "type": "string",
+                "enum": [
+                    "cash",
+                    "bank",
+                    "ewallet",
+                    "liability",
+                    "receivable"
+                ],
+                "title": "AccountType"
+            },
+            "CategoryRequest": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "maxLength": 50
+                    },
+                    "type": {
+                        "description": "Changing the type would break existing transactions, so it is fixed after creation.",
+                        "$ref": "#/components/schemas/CategoryType"
+                    },
+                    "icon": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 50
+                    },
+                    "color": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "pattern": "^#[0-9A-Fa-f]{6}$"
+                    }
+                },
+                "required": [
+                    "name",
+                    "type"
+                ],
+                "title": "CategoryRequest"
+            },
+            "CategoryResource": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "type": {
+                        "$ref": "#/components/schemas/CategoryType"
+                    },
+                    "icon": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "color": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "is_system": {
+                        "type": "boolean"
+                    }
+                },
+                "required": [
+                    "id",
+                    "name",
+                    "type",
+                    "icon",
+                    "color",
+                    "is_system"
+                ],
+                "title": "CategoryResource"
+            },
+            "CategoryType": {
+                "type": "string",
+                "enum": [
+                    "income",
+                    "expense"
+                ],
+                "title": "CategoryType"
+            },
+            "EventOccurrenceResource": {
+                "type": "object",
+                "properties": {
+                    "key": {
+                        "type": "string"
+                    },
+                    "id": {
+                        "type": "string"
+                    },
+                    "title": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "location": {
+                        "type": "string"
+                    },
+                    "event_type": {
+                        "type": "string"
+                    },
+                    "status": {
+                        "type": "string"
+                    },
+                    "start_at": {
+                        "type": "string"
+                    },
+                    "end_at": {
+                        "type": "string"
+                    },
+                    "recurrence_rule": {
+                        "type": "string"
+                    },
+                    "series_start_at": {
+                        "type": "string"
+                    },
+                    "series_end_at": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "key",
+                    "id",
+                    "title",
+                    "description",
+                    "location",
+                    "event_type",
+                    "status",
+                    "start_at",
+                    "end_at",
+                    "recurrence_rule",
+                    "series_start_at",
+                    "series_end_at"
+                ],
+                "title": "EventOccurrenceResource"
+            },
+            "EventRequest": {
+                "type": "object",
+                "description": "POST requires every field; PATCH accepts any subset.",
+                "properties": {
+                    "title": {
+                        "type": "string",
+                        "maxLength": 255
+                    },
+                    "description": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 5000
+                    },
+                    "location": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 255
+                    },
+                    "start_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "end_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "event_type": {
+                        "$ref": "#/components/schemas/EventType"
+                    },
+                    "status": {
+                        "$ref": "#/components/schemas/EventStatus"
+                    },
+                    "recurrence_rule": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 255
+                    }
+                },
+                "required": [
+                    "title",
+                    "start_at",
+                    "end_at",
+                    "event_type"
+                ],
+                "title": "EventRequest"
+            },
+            "EventStatus": {
+                "type": "string",
+                "enum": [
+                    "scheduled",
+                    "completed",
+                    "cancelled"
+                ],
+                "title": "EventStatus"
+            },
+            "EventType": {
+                "type": "string",
+                "enum": [
+                    "study",
+                    "work",
+                    "workout",
+                    "rest",
+                    "personal"
+                ],
+                "title": "EventType"
+            },
+            "LoginRequest": {
+                "type": "object",
+                "properties": {
+                    "email": {
+                        "type": "string",
+                        "format": "email"
+                    },
+                    "password": {
+                        "type": "string"
+                    },
+                    "device_name": {
+                        "type": "string",
+                        "maxLength": 100
+                    }
+                },
+                "required": [
+                    "email",
+                    "password",
+                    "device_name"
+                ],
+                "title": "LoginRequest"
+            },
+            "RegisterRequest": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "maxLength": 255
+                    },
+                    "email": {
+                        "type": "string",
+                        "format": "email",
+                        "maxLength": 255
+                    },
+                    "password": {
+                        "type": "string"
+                    },
+                    "device_name": {
+                        "type": "string",
+                        "maxLength": 100
+                    },
+                    "password_confirmation": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "name",
+                    "email",
+                    "password",
+                    "device_name",
+                    "password_confirmation"
+                ],
+                "title": "RegisterRequest"
+            },
+            "ResetPasswordRequest": {
+                "type": "object",
+                "properties": {
+                    "token": {
+                        "type": "string"
+                    },
+                    "email": {
+                        "type": "string",
+                        "format": "email"
+                    },
+                    "password": {
+                        "type": "string"
+                    },
+                    "password_confirmation": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "token",
+                    "email",
+                    "password",
+                    "password_confirmation"
+                ],
+                "title": "ResetPasswordRequest"
+            },
+            "TaskPriority": {
+                "type": "string",
+                "enum": [
+                    "low",
+                    "medium",
+                    "high",
+                    "urgent"
+                ],
+                "title": "TaskPriority"
+            },
+            "TaskResource": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "title": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "priority": {
+                        "$ref": "#/components/schemas/TaskPriority"
+                    },
+                    "status": {
+                        "$ref": "#/components/schemas/TaskStatus"
+                    },
+                    "due_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "completed_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "created_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "updated_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    }
+                },
+                "required": [
+                    "id",
+                    "title",
+                    "description",
+                    "priority",
+                    "status",
+                    "due_at",
+                    "completed_at",
+                    "created_at",
+                    "updated_at"
+                ],
+                "title": "TaskResource"
+            },
+            "TaskStatus": {
+                "type": "string",
+                "enum": [
+                    "todo",
+                    "in_progress",
+                    "completed",
+                    "cancelled"
+                ],
+                "title": "TaskStatus"
+            },
+            "TransactionResource": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "type": {
+                        "$ref": "#/components/schemas/TransactionType"
+                    },
+                    "account_id": {
+                        "type": "integer"
+                    },
+                    "to_account_id": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
+                    },
+                    "category_id": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
+                    },
+                    "amount": {
+                        "type": "string"
+                    },
+                    "currency": {
+                        "type": "string"
+                    },
+                    "occurred_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "description": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "created_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "updated_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    }
+                },
+                "required": [
+                    "id",
+                    "type",
+                    "account_id",
+                    "to_account_id",
+                    "category_id",
+                    "amount",
+                    "currency",
+                    "occurred_at",
+                    "description",
+                    "created_at",
+                    "updated_at"
+                ],
+                "title": "TransactionResource"
+            },
+            "TransactionType": {
+                "type": "string",
+                "enum": [
+                    "income",
+                    "expense",
+                    "transfer"
+                ],
+                "title": "TransactionType"
+            },
+            "UpsertTaskRequest": {
+                "type": "object",
+                "description": "PUT = full representation: the client always sends every field (same payload online and from the offline outbox).",
+                "properties": {
+                    "title": {
+                        "type": "string",
+                        "maxLength": 255
+                    },
+                    "description": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 5000
+                    },
+                    "priority": {
+                        "$ref": "#/components/schemas/TaskPriority"
+                    },
+                    "status": {
+                        "$ref": "#/components/schemas/TaskStatus"
+                    },
+                    "due_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "date-time"
+                    },
+                    "client_updated_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "date-time",
+                        "description": "When the edit was made on the client (offline outbox) \u2014 used for last-write-wins."
+                    }
+                },
+                "required": [
+                    "title",
+                    "description",
+                    "priority",
+                    "status",
+                    "due_at"
+                ],
+                "title": "UpsertTaskRequest"
+            },
+            "UpsertTransactionRequest": {
+                "type": "object",
+                "description": "PUT = full representation (same payload online and from the Phase 7 offline outbox).\nNever trust IDs from the client (spec \u00a75): accounts and categories must belong to this user.",
+                "properties": {
+                    "type": {
+                        "$ref": "#/components/schemas/TransactionType"
+                    },
+                    "account_id": {
+                        "type": "integer"
+                    },
+                    "to_account_id": {
+                        "type": "string"
+                    },
+                    "category_id": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
+                    },
+                    "amount": {
+                        "type": "number",
+                        "maximum": 9999999999999.99
+                    },
+                    "occurred_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "description": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 1000
+                    }
+                },
+                "required": [
+                    "type",
+                    "account_id",
+                    "amount",
+                    "occurred_at",
+                    "description"
+                ],
+                "title": "UpsertTransactionRequest"
+            },
+            "UserResource": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "email": {
+                        "type": "string"
+                    },
+                    "settings": {
+                        "type": "object",
+                        "properties": {
+                            "timezone": {
+                                "type": "string"
+                            },
+                            "locale": {
+                                "type": "string"
+                            },
+                            "currency": {
+                                "type": "string"
+                            },
+                            "theme": {
+                                "type": "string"
+                            },
+                            "preferences": {
+                                "type": [
+                                    "array",
+                                    "string"
+                                ]
+                            },
+                            "city": {
+                                "type": [
+                                    "object",
+                                    "null"
+                                ],
+                                "description": "City for the weather forecast (spec \u00a715.5); null until chosen in Settings",
+                                "properties": {
+                                    "name": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ]
+                                    },
+                                    "latitude": {
+                                        "type": [
+                                            "number",
+                                            "null"
+                                        ]
+                                    },
+                                    "longitude": {
+                                        "type": [
+                                            "number",
+                                            "null"
+                                        ]
+                                    }
+                                },
+                                "required": [
+                                    "name",
+                                    "latitude",
+                                    "longitude"
+                                ]
+                            }
+                        },
+                        "required": [
+                            "timezone",
+                            "locale",
+                            "currency",
+                            "theme",
+                            "preferences",
+                            "city"
+                        ]
+                    }
+                },
+                "required": [
+                    "id",
+                    "name",
+                    "email"
+                ],
+                "title": "UserResource"
+            }
+        },
+        "responses": {
+            "ValidationException": {
+                "description": "Validation error",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "message": {
+                                    "type": "string",
+                                    "description": "Errors overview."
+                                },
+                                "errors": {
+                                    "type": "object",
+                                    "description": "A detailed description of each field that failed validation.",
+                                    "additionalProperties": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            },
+                            "required": [
+                                "message",
+                                "errors"
+                            ]
+                        }
+                    }
+                }
+            },
+            "AuthenticationException": {
+                "description": "Unauthenticated",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "message": {
+                                    "type": "string",
+                                    "description": "Error overview."
+                                }
+                            },
+                            "required": [
+                                "message"
+                            ]
+                        }
+                    }
+                }
+            },
+            "ModelNotFoundException": {
+                "description": "Not found",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "message": {
+                                    "type": "string",
+                                    "description": "Error overview."
+                                }
+                            },
+                            "required": [
+                                "message"
+                            ]
+                        }
+                    }
+                }
+            },
+            "AuthorizationException": {
+                "description": "Authorization error",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "message": {
+                                    "type": "string",
+                                    "description": "Error overview."
+                                }
+                            },
+                            "required": [
+                                "message"
+                            ]
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
