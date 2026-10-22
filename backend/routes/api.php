@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\V1\AccountController;
+use App\Http\Controllers\Api\V1\AiController;
 use App\Http\Controllers\Api\V1\Auth\AuthController;
 use App\Http\Controllers\Api\V1\Auth\PasswordResetController;
 use App\Http\Controllers\Api\V1\BudgetController;
@@ -43,6 +44,14 @@ Route::prefix('v1')->group(function () {
         Route::patch('/me/settings', [SettingsController::class, 'update']);
 
         Route::get('/dashboard', DashboardController::class);
+
+        // AI Coach — online only, per-user daily limits inside the controller
+        Route::get('/ai/briefing', [AiController::class, 'briefing']);
+        Route::post('/ai/briefing/refresh', [AiController::class, 'refreshBriefing']);
+        Route::post('/ai/chat', [AiController::class, 'chat']);
+        Route::get('/ai/conversations/latest', [AiController::class, 'latest']);
+        Route::post('/ai/proposals/{proposal}/confirm', [AiController::class, 'confirm'])->whereNumber('proposal');
+        Route::post('/ai/proposals/{proposal}/reject', [AiController::class, 'reject'])->whereNumber('proposal');
         Route::get('/weather', [WeatherController::class, 'show']);
         // Proxies a third-party geocoder — keep it modest.
         Route::get('/weather/cities', [WeatherController::class, 'cities'])->middleware('throttle:30,1');

@@ -4,6 +4,7 @@ import { AlertTriangle, CalendarClock, CalendarPlus, ListTodo, MapPin, RotateCw,
 import { Link } from 'react-router'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
+import { BriefingCard } from '@/features/ai/BriefingCard'
 import { meQuery } from '@/features/auth/api'
 import { dashboardQuery, weatherQuery, type Dashboard, type Weather } from '@/features/dashboard/api'
 import { weatherLabel } from '@/features/dashboard/weather'
@@ -37,7 +38,7 @@ function headerText() {
   }
 }
 
-// /app/dashboard (spec §9.1): real data only, each figure with its period. AI briefing arrives in Phase 8b.
+// /app/dashboard (spec §9.1): real data only, each figure with its period; AI briefing on top when online.
 export function DashboardPage() {
   const online = useOnlineStatus()
   const me = useQuery(meQuery)
@@ -64,6 +65,8 @@ export function DashboardPage() {
         </section>
         <WeatherCard weather={weather.data} pending={weather.isPending} />
       </div>
+
+      {online && <BriefingCard />}
 
       {dashboard.isPending ? (
         <div className="grid gap-4 lg:grid-cols-2">
