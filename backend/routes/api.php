@@ -1,9 +1,12 @@
 <?php
 
+use App\Http\Controllers\Api\V1\AccountController;
 use App\Http\Controllers\Api\V1\Auth\AuthController;
 use App\Http\Controllers\Api\V1\Auth\PasswordResetController;
+use App\Http\Controllers\Api\V1\CategoryController;
 use App\Http\Controllers\Api\V1\EventController;
 use App\Http\Controllers\Api\V1\TaskController;
+use App\Http\Controllers\Api\V1\TransactionController;
 use App\Http\Resources\UserResource;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -42,5 +45,19 @@ Route::prefix('v1')->group(function () {
         Route::post('/events', [EventController::class, 'store']);
         Route::patch('/events/{event}', [EventController::class, 'update'])->whereNumber('event');
         Route::delete('/events/{event}', [EventController::class, 'destroy'])->whereNumber('event');
+
+        Route::get('/accounts', [AccountController::class, 'index']);
+        Route::post('/accounts', [AccountController::class, 'store']);
+        Route::patch('/accounts/{account}', [AccountController::class, 'update'])->whereNumber('account');
+        Route::delete('/accounts/{account}', [AccountController::class, 'destroy'])->whereNumber('account');
+
+        Route::get('/categories', [CategoryController::class, 'index']);
+        Route::post('/categories', [CategoryController::class, 'store']);
+        Route::patch('/categories/{category}', [CategoryController::class, 'update'])->whereNumber('category');
+        Route::delete('/categories/{category}', [CategoryController::class, 'destroy'])->whereNumber('category');
+
+        Route::get('/transactions', [TransactionController::class, 'index']);
+        Route::put('/transactions/{id}', [TransactionController::class, 'upsert'])->whereUuid('id');
+        Route::delete('/transactions/{transaction}', [TransactionController::class, 'destroy'])->whereUuid('transaction');
     });
 });

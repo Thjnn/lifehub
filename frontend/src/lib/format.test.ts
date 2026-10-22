@@ -25,3 +25,19 @@ it('round-trips datetime-local values', () => {
   const iso = fromDateTimeLocal('2026-10-25T14:00')!
   expect(toDateTimeLocal(iso)).toBe('2026-10-25T14:00')
 })
+
+it('handles month keys', async () => {
+  const { formatMonth, monthKey, shiftMonth } = await import('@/lib/format')
+  expect(monthKey(new Date(2026, 9, 22))).toBe('2026-10')
+  expect(shiftMonth('2026-12', 1)).toBe('2027-01')
+  expect(shiftMonth('2026-01', -1)).toBe('2025-12')
+  expect(formatMonth('2026-01')).toBe('Tháng 1/2026')
+})
+
+it('labels day groups', async () => {
+  const { formatDayHeader } = await import('@/lib/format')
+  const now = new Date(2026, 9, 22, 10)
+  expect(formatDayHeader(new Date(2026, 9, 22, 8), now)).toBe('Hôm nay')
+  expect(formatDayHeader(new Date(2026, 9, 21), now)).toBe('Hôm qua')
+  expect(formatDayHeader(new Date(2026, 9, 19), now)).toBe('Thứ Hai, 19/10') // 22/10/2026 is a Thursday
+})

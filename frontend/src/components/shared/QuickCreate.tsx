@@ -13,7 +13,7 @@ import {
 const actions = [
   { label: 'Công việc', icon: ListTodo, to: '/app/tasks?new=1' },
   { label: 'Sự kiện', icon: CalendarPlus, to: '/app/calendar?new=1' },
-  { label: 'Giao dịch', icon: Wallet, to: undefined },
+  { label: 'Giao dịch', icon: Wallet, to: '/app/finance/transactions?new=1' },
 ]
 
 // Spec §7: quick create task / event / transaction.

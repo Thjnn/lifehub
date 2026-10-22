@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Field, FieldError, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { groupDigits, parseVndInput } from '@/lib/money'
 
 export function TextField({ label, error, ...props }: ComponentProps<typeof Input> & { label: string; error?: string }) {
   const id = useId()
@@ -47,6 +48,44 @@ export function SelectField<T extends string>({
           ))}
         </SelectContent>
       </Select>
+      <FieldError>{error}</FieldError>
+    </Field>
+  )
+}
+
+// Whole-VND amount input: value is digits only ("1500000"), shown grouped ("1.500.000 ₫").
+export function MoneyField({
+  label,
+  value,
+  onChange,
+  error,
+  autoFocus,
+}: {
+  label: string
+  value: string
+  onChange: (digits: string) => void
+  error?: string
+  autoFocus?: boolean
+}) {
+  const id = useId()
+
+  return (
+    <Field data-invalid={!!error}>
+      <FieldLabel htmlFor={id}>{label}</FieldLabel>
+      <div className="relative">
+        <Input
+          id={id}
+          inputMode="numeric"
+          autoComplete="off"
+          autoFocus={autoFocus}
+          aria-invalid={!!error}
+          className="h-12 pr-8 text-lg font-semibold tabular-nums"
+          placeholder="0"
+          value={groupDigits(value)}
+          onChange={(e) => onChange(parseVndInput(e.target.value))}
+        />
+        <span className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-muted-foreground">₫</span>
+      </div>
       <FieldError>{error}</FieldError>
     </Field>
   )

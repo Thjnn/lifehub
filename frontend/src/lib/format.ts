@@ -37,3 +37,25 @@ export function toDateTimeLocal(iso: string | null) {
 export function fromDateTimeLocal(value: string) {
   return value ? new Date(value).toISOString() : null
 }
+
+// Months as "YYYY-MM" (what the API's ?month= expects), in local time.
+export const monthKey = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}`
+
+export function shiftMonth(key: string, delta: number) {
+  const [y, m] = key.split('-').map(Number)
+  return monthKey(new Date(y, m - 1 + delta, 1))
+}
+
+// "2026-10" → "Tháng 10/2026"
+export const formatMonth = (key: string) => `Tháng ${Number(key.slice(5))}/${key.slice(0, 4)}`
+
+const weekdayFormat = new Intl.DateTimeFormat('vi-VN', { weekday: 'long' })
+
+// Day group header: "Hôm nay", "Hôm qua", or "Thứ Tư, 22/10"
+export function formatDayHeader(d: Date, now = new Date()) {
+  const diff = dayDiff(d, now)
+  if (diff === 0) return 'Hôm nay'
+  if (diff === -1) return 'Hôm qua'
+  const weekday = weekdayFormat.format(d)
+  return `${weekday.charAt(0).toUpperCase()}${weekday.slice(1)}, ${dayMonth(d)}`
+}

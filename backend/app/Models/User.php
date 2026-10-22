@@ -55,4 +55,14 @@ class User extends Authenticatable
     {
         return $this->hasMany(Event::class);
     }
+
+    public function accounts(): HasMany
+    {
+        return $this->hasMany(Account::class);
+    }
+
+    public function transactions(): HasMany
+    {
+        return $this->hasMany(Transaction::class);
+    }
 }
