@@ -10,6 +10,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request as HttpRequest;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Sleep;
 use Illuminate\Support\Str;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
@@ -23,7 +24,8 @@ class AiTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        config(['services.gemini.key' => 'test-key', 'services.gemini.model' => 'gemini-test']);
+        config(['services.gemini.key' => 'test-key', 'services.gemini.model' => 'gemini-test', 'services.gemini.fallback_model' => 'gemini-lite-test']);
+        Sleep::fake(); // retry back-off without actually waiting
         $this->travelTo('2026-10-22 03:00:00'); // Thursday 10:00 in Vietnam
         $this->user = User::factory()->create(['name' => 'Nguyễn Minh']);
     }
@@ -179,7 +181,8 @@ class AiTest extends TestCase
             'invalid key' => [400, ['error' => ['message' => 'API key not valid. Please pass a valid API key.', 'status' => 'INVALID_ARGUMENT']], 'GEMINI_API_KEY không hợp lệ. Tạo lại key trong AI Studio và cập nhật trên Render.'],
             'forbidden key' => [403, ['error' => ['message' => 'Permission denied']], 'GEMINI_API_KEY không có quyền dùng Gemini API (key bị chặn hoặc chưa bật API).'],
             'other 400' => [400, ['error' => ['message' => 'Invalid JSON payload received.']], 'Gemini từ chối yêu cầu (mã 400): Invalid JSON payload received.'],
-            'server error' => [500, ['error' => ['message' => 'internal']], 'AI Coach đang gặp lỗi (mã 500), vui lòng thử lại sau.'],
+            'overloaded everywhere' => [503, ['error' => ['message' => 'The model is overloaded.']], 'Gemini đang quá tải, vui lòng thử lại sau ít phút.'],
+            'other server error' => [502, ['error' => ['message' => 'bad gateway']], 'AI Coach đang gặp lỗi (mã 502), vui lòng thử lại sau.'],
         ];
     }
 
@@ -191,6 +194,21 @@ class AiTest extends TestCase
         $this->actingAs($this->user)->postJson('/api/v1/ai/chat', ['message' => 'hi'])
             ->assertStatus(503)
             ->assertJsonPath('message', $message);
+    }
+
+    public function test_overloaded_model_is_retried_then_falls_back(): void
+    {
+        Http::fake([
+            'generativelanguage.googleapis.com/*/gemini-test:*' => Http::response(['error' => ['message' => 'The model is overloaded.']], 503),
+            'generativelanguage.googleapis.com/*/gemini-lite-test:*' => Http::response(self::text('Trả lời từ model dự phòng')),
+        ]);
+
+        $this->actingAs($this->user)->postJson('/api/v1/ai/chat', ['message' => 'hi'])
+            ->assertOk()
+            ->assertJsonPath('data.reply', 'Trả lời từ model dự phòng');
+
+        Http::assertSentCount(3); // main model twice (retry), then the fallback
+        $this->assertDatabaseHas('ai_messages', ['role' => 'assistant', 'model' => 'gemini-lite-test']);
     }
 
     public function test_missing_key_is_a_friendly_503(): void

@@ -27,6 +27,8 @@ return [
     'gemini' => [
         'key' => env('GEMINI_API_KEY'),
         'model' => env('GEMINI_MODEL', 'gemini-3.8-flash'),
+        // Used when the main model is overloaded (503). The "-latest" alias follows Google's newest Flash-Lite.
+        'fallback_model' => env('GEMINI_FALLBACK_MODEL', 'gemini-flash-lite-latest'),
         'timeout' => (int) env('GEMINI_TIMEOUT', 25),
     ],
 

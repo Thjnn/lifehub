@@ -5,6 +5,7 @@ namespace App\Services\Ai;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Sleep;
 
 /**
  * Minimal client for the Gemini REST API (generateContent with function calling).
@@ -40,12 +41,26 @@ class Gemini
             $body['tools'] = [['functionDeclarations' => $functions]];
         }
 
-        try {
-            $response = Http::withHeaders(['x-goog-api-key' => $key])
-                ->timeout(config('services.gemini.timeout'))
-                ->post(self::BASE.$model.':generateContent', $body);
-        } catch (ConnectionException) {
-            throw new AiUnavailable('AI Coach phản hồi quá lâu, vui lòng thử lại.');
+        // Gemini answers 503/500 when a model is overloaded (common on the free tier). Retry once after a short
+        // pause, then try the lighter fallback model, before giving up.
+        $fallback = config('services.gemini.fallback_model');
+        $attempts = $fallback && $fallback !== $model ? [$model, $model, $fallback] : [$model, $model];
+        foreach ($attempts as $i => $attemptModel) {
+            if ($i > 0) {
+                Sleep::for(1500)->milliseconds();
+            }
+            try {
+                $response = Http::withHeaders(['x-goog-api-key' => $key])
+                    ->timeout(config('services.gemini.timeout'))
+                    ->post(self::BASE.$attemptModel.':generateContent', $body);
+            } catch (ConnectionException) {
+                throw new AiUnavailable('AI Coach phản hồi quá lâu, vui lòng thử lại.');
+            }
+            $model = $attemptModel;
+            if (! in_array($response->status(), [500, 503], true)) {
+                break;
+            }
+            Log::warning('Gemini overloaded', ['status' => $response->status(), 'model' => $attemptModel, 'attempt' => $i + 1]);
         }
 
         if ($response->failed()) {
@@ -60,6 +75,7 @@ class Gemini
                 str_contains($reason, 'API key not valid') || str_contains($reason, 'API_KEY_INVALID') => 'GEMINI_API_KEY không hợp lệ. Tạo lại key trong AI Studio và cập nhật trên Render.',
                 $status === 403 => 'GEMINI_API_KEY không có quyền dùng Gemini API (key bị chặn hoặc chưa bật API).',
                 $status === 400 => "Gemini từ chối yêu cầu (mã 400): {$reason}",
+                in_array($status, [500, 503], true) => 'Gemini đang quá tải, vui lòng thử lại sau ít phút.',
                 default => "AI Coach đang gặp lỗi (mã {$status}), vui lòng thử lại sau.",
             });
         }
