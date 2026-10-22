@@ -1,6 +1,5 @@
 import { createBrowserRouter, Navigate, redirect } from 'react-router'
 import { queryClient } from '@/app/query-client'
-import { ComingSoon } from '@/components/shared/ComingSoon'
 import { FullPageSpinner } from '@/components/shared/FullPageSpinner'
 import { NotFound } from '@/components/shared/NotFound'
 import { AiCoachPage } from '@/features/ai/AiCoachPage'
@@ -17,14 +16,14 @@ import { ReportsPage } from '@/features/finance/ReportsPage'
 import { TransactionsPage } from '@/features/finance/TransactionsPage'
 import { LandingPage } from '@/features/landing/LandingPage'
 import { PreferencesPage } from '@/features/settings/PreferencesPage'
+import { ProfilePage } from '@/features/settings/ProfilePage'
 import { PrivacyPage } from '@/features/settings/PrivacyPage'
 import { TasksPage } from '@/features/tasks/TasksPage'
 import { AppLayout } from '@/layouts/AppLayout'
 import { AuthLayout } from '@/layouts/AuthLayout'
 import { ApiError, tokenStore } from '@/lib/api-client'
 
-// Routes from spec §8. Pages are placeholders until their phase; `handle.title` feeds the topbar.
-const page = (path: string, title: string) => ({ path, element: <ComingSoon />, handle: { title } })
+// Routes from spec §8; `handle.title` feeds the topbar.
 
 export async function requireAuth() {
   if (!tokenStore.get()) return redirect('/login')
@@ -84,7 +83,7 @@ export const router = createBrowserRouter([
         path: 'settings',
         children: [
           { index: true, element: <Navigate to="profile" replace /> },
-          page('profile', 'Hồ sơ'),
+          { path: 'profile', element: <ProfilePage />, handle: { title: 'Hồ sơ' } },
           { path: 'preferences', element: <PreferencesPage />, handle: { title: 'Tùy chọn' } },
           { path: 'privacy', element: <PrivacyPage />, handle: { title: 'Quyền riêng tư' } },
         ],

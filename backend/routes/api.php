@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\V1\DebtController;
 use App\Http\Controllers\Api\V1\EventController;
 use App\Http\Controllers\Api\V1\FinanceReportController;
 use App\Http\Controllers\Api\V1\PrivacyController;
+use App\Http\Controllers\Api\V1\ProfileController;
 use App\Http\Controllers\Api\V1\SettingsController;
 use App\Http\Controllers\Api\V1\TaskController;
 use App\Http\Controllers\Api\V1\TransactionController;
@@ -42,6 +43,8 @@ Route::prefix('v1')->group(function () {
         Route::post('/auth/logout', [AuthController::class, 'logout']);
         Route::get('/me', fn (Request $request) => new UserResource($request->user()->load('settings')));
         Route::patch('/me/settings', [SettingsController::class, 'update']);
+        Route::patch('/me', [ProfileController::class, 'update']);
+        Route::put('/me/password', [ProfileController::class, 'password'])->middleware('throttle:6,1');
         Route::delete('/me', [PrivacyController::class, 'destroy'])->middleware('throttle:6,1');
         Route::get('/privacy/export', [PrivacyController::class, 'export'])->middleware('throttle:6,1');
 
