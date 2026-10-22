@@ -11,6 +11,7 @@ use App\Models\Account;
 use App\Models\Budget;
 use App\Models\Category;
 use App\Models\Event;
+use App\Models\Note;
 use App\Models\Task;
 use App\Models\Transaction;
 use App\Models\User;
@@ -42,9 +43,14 @@ class DemoSeeder extends Seeder
             Task::factory()->for($user)->create(['title' => $title, 'description' => 'Dữ liệu demo', 'priority' => $priority, 'status' => $status, 'due_at' => $due]);
         }
 
-        Event::factory()->for($user)->create(['title' => 'Học Cấu trúc dữ liệu', 'event_type' => EventType::Study, 'location' => 'Phòng B2.04', 'start_at' => $at(0, 7, 30), 'end_at' => $at(0, 9, 30), 'recurrence_rule' => 'FREQ=WEEKLY;BYDAY=MO,WE,FR']);
+        $class = Event::factory()->for($user)->create(['title' => 'Học Cấu trúc dữ liệu', 'event_type' => EventType::Study, 'location' => 'Phòng B2.04', 'start_at' => $at(0, 7, 30), 'end_at' => $at(0, 9, 30), 'recurrence_rule' => 'FREQ=WEEKLY;BYDAY=MO,WE,FR']);
         Event::factory()->for($user)->create(['title' => 'Tập gym', 'event_type' => EventType::Workout, 'start_at' => $at(0, 18), 'end_at' => $at(0, 19), 'recurrence_rule' => 'FREQ=WEEKLY;BYDAY=TU,TH,SA']);
         Event::factory()->for($user)->create(['title' => 'Ca làm thêm quán cà phê', 'event_type' => EventType::Work, 'location' => 'Highlands Nguyễn Huệ', 'start_at' => $at(1, 13), 'end_at' => $at(1, 17)]);
+
+        $report = $user->tasks()->where('title', 'Nộp báo cáo môn Cơ sở dữ liệu')->value('id');
+        Note::factory()->for($user)->create(['title' => 'Dàn ý báo cáo (demo)', 'body' => "1. Giới thiệu đề tài\n2. Thiết kế ERD\n3. Chuẩn hoá 3NF\n4. Kết luận", 'pinned' => true, 'task_id' => $report]);
+        Note::factory()->for($user)->create(['title' => 'Bài tập về nhà (demo)', 'body' => 'Cài đặt cây AVL, nộp trước buổi học sau.', 'event_id' => $class->id]);
+        Note::factory()->for($user)->create(['title' => null, 'body' => 'Mua: sữa, trứng, bánh mì (demo)']);
 
         $cash = Account::factory()->for($user)->create(['name' => 'Tiền mặt', 'account_type' => AccountType::Cash, 'opening_balance' => '800000.00']);
         $bank = Account::factory()->for($user)->create(['name' => 'Ngân hàng', 'account_type' => AccountType::Bank, 'opening_balance' => '3500000.00']);

@@ -3,6 +3,7 @@ import { queryClient } from '@/app/query-client'
 import { FullPageSpinner } from '@/components/shared/FullPageSpinner'
 import { NotFound } from '@/components/shared/NotFound'
 import { AiCoachPage } from '@/features/ai/AiCoachPage'
+import { NotesPage } from '@/features/notes/NotesPage'
 import { meQuery } from '@/features/auth/api'
 import { DashboardPage } from '@/features/dashboard/DashboardPage'
 import { ForgotPasswordPage } from '@/features/auth/ForgotPasswordPage'
@@ -78,6 +79,7 @@ export const router = createBrowserRouter([
           { path: 'reports', element: <ReportsPage />, handle: { title: 'Báo cáo' } },
         ],
       },
+      { path: 'notes', element: <NotesPage />, handle: { title: 'Ghi chú' } },
       { path: 'ai-coach', element: <AiCoachPage />, handle: { title: 'AI Coach' } },
       {
         path: 'settings',

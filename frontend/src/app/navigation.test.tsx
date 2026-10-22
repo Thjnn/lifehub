@@ -35,6 +35,7 @@ const responses: [RegExp, unknown][] = [
   [/\/categories$/, { data: [category] }],
   [/\/transactions\?/, page([{ id: '22222222-2222-4222-8222-222222222222', type: 'expense', account_id: 1, to_account_id: null, category_id: 1, amount: '45000.00', currency: 'VND', occurred_at: iso(now), description: null, created_at: iso(now), updated_at: iso(now) }])],
   [/\/budgets\?/, { data: [{ id: 1, category_id: null, period_start: `${month}-01`, period_end: `${month}-28`, amount: '3000000.00', spent: '45000.00', remaining: '2955000.00', percent: 2 }] }],
+  [/\/notes\?/, page([{ id: '33333333-3333-4333-8333-333333333333', title: 'Ý tưởng', body: 'Ghi chú\nhai dòng', pinned: true, task_id: null, event_id: null, created_at: iso(now), updated_at: iso(now) }])],
   [/\/reports\/finance\?/, { data: { month, income: '0.00', expense: '45000.00', net: '-45000.00', previous: { income: '0.00', expense: '0.00' }, by_category: [{ category_id: 1, amount: '45000.00' }] } }],
 ]
 
@@ -58,7 +59,7 @@ afterAll(() => vi.unstubAllGlobals())
 
 const pages = [
   '/app/dashboard', '/app/tasks', '/app/calendar', '/app/finance', '/app/finance/transactions', '/app/finance/accounts',
-  '/app/finance/budgets', '/app/finance/reports', '/app/ai-coach', '/app/settings/preferences', '/app/dashboard',
+  '/app/finance/budgets', '/app/finance/reports', '/app/notes', '/app/ai-coach', '/app/settings/profile', '/app/settings/preferences', '/app/settings/privacy', '/app/dashboard',
 ]
 
 it('every page renders, runs its effects and unmounts without hitting the error boundary', async () => {

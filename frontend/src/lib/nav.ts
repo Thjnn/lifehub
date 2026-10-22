@@ -1,4 +1,4 @@
-import { CalendarDays, LayoutDashboard, ListTodo, Settings, Sparkles, Wallet, type LucideIcon } from 'lucide-react'
+import { CalendarDays, LayoutDashboard, ListTodo, NotebookPen, Settings, Sparkles, Wallet, type LucideIcon } from 'lucide-react'
 
 export type NavItem = {
   to: string
@@ -24,6 +24,7 @@ export const navItems: NavItem[] = [
       { to: '/app/finance/reports', label: 'Báo cáo' },
     ],
   },
+  { to: '/app/notes', label: 'Ghi chú', icon: NotebookPen },
   { to: '/app/ai-coach', label: 'AI Coach', icon: Sparkles },
   {
     to: '/app/settings',

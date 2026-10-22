@@ -86,7 +86,7 @@ async function replay() {
 
   if (changed) {
     await Promise.all(
-      [['tasks'], ['transactions'], ['accounts'], ['budgets'], ['reports'], ['debts'], ['dashboard']].map((queryKey) =>
+      [['tasks'], ['transactions'], ['notes'], ['accounts'], ['budgets'], ['reports'], ['debts'], ['dashboard']].map((queryKey) =>
         queryClient.invalidateQueries({ queryKey }),
       ),
     )
@@ -111,7 +111,7 @@ export async function retryItem(item: OutboxItem, { overwrite = false } = {}) {
 export async function discardItem(item: OutboxItem) {
   await db.outbox.delete(item.id!)
   // Optimistic edits in the cache were never saved: reload the server's version.
-  await queryClient.invalidateQueries({ queryKey: [item.entity === 'task' ? 'tasks' : 'transactions'] })
+  await queryClient.invalidateQueries({ queryKey: [`${item.entity}s`] }) // task → tasks, note → notes…
 }
 
 export function useOutbox() {

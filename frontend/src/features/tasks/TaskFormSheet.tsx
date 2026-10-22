@@ -18,6 +18,7 @@ import { Button } from '@/components/ui/button'
 import { Field, FieldLabel } from '@/components/ui/field'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { Textarea } from '@/components/ui/textarea'
+import { LinkedNotes } from '@/features/notes/LinkedNotes'
 import { useDeleteTask, useSaveTask, type Task } from '@/features/tasks/api'
 import { priorityOptions, statusOptions } from '@/features/tasks/labels'
 import { useIsDesktop } from '@/hooks/use-media-query'
@@ -53,6 +54,7 @@ export function TaskFormSheet({ open, onOpenChange, task }: Props) {
         </SheetHeader>
         {/* key: reset the form whenever a different task is opened */}
         <TaskForm key={task?.id ?? 'new'} task={task} onDone={() => onOpenChange(false)} />
+        {task && <LinkedNotes link={{ task_id: task.id, event_id: null }} />}
       </SheetContent>
     </Sheet>
   )

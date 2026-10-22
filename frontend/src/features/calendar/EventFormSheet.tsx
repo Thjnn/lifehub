@@ -21,6 +21,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { useDeleteEvent, useSaveEvent, type Occurrence } from '@/features/calendar/api'
 import { eventStatusOptions, eventTypeOptions } from '@/features/calendar/labels'
 import { buildRule, parseRule, repeatOptions } from '@/features/calendar/recurrence'
+import { LinkedNotes } from '@/features/notes/LinkedNotes'
 import { useIsDesktop } from '@/hooks/use-media-query'
 import { useOnlineStatus } from '@/hooks/use-online-status'
 import { fromDateTimeLocal, toDateTimeLocal } from '@/lib/format'
@@ -71,6 +72,7 @@ export function EventFormSheet({ open, onOpenChange, occurrence, defaults }: Pro
           defaults={defaults}
           onDone={() => onOpenChange(false)}
         />
+        {occurrence && <LinkedNotes link={{ task_id: null, event_id: occurrence.id }} />}
       </SheetContent>
     </Sheet>
   )
