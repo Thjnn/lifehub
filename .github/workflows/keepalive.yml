@@ -1,0 +1,18 @@
+name: Keepalive
+
+# Supabase free pauses a project after ~1 week without activity. /api/health runs `select 1`,
+# so one ping a day keeps the database awake (it also wakes Render, which sleeps after ~15 min).
+on:
+  schedule:
+    - cron: '0 1 * * *' # 08:00 Vietnam time
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    # Set repo variable API_HEALTH_URL (Settings → Secrets and variables → Actions → Variables),
+    # e.g. https://lifehub-api.onrender.com/api/health. Skipped until it exists.
+    if: vars.API_HEALTH_URL != ''
+    steps:
+      # Generous timeout: a sleeping Render instance takes 30–60s to start.
+      - run: curl --fail --silent --show-error --max-time 120 --retry 2 --retry-delay 10 "${{ vars.API_HEALTH_URL }}"

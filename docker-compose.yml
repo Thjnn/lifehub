@@ -12,5 +12,24 @@
     volumes:
       - pgdata:/var/lib/postgresql/data
 
+  # Production image (same Dockerfile as Render) for checking the build locally:
+  #   docker compose --profile app up --build   → http://localhost:8080/api/health
+  # Day-to-day dev stays on Laragon (dev.bat): bind-mounting E:\ into Docker on Windows is slow.
+  app:
+    build: ./backend
+    container_name: lifehub-app
+    profiles: [app]
+    depends_on: [db]
+    env_file: ./backend/.env
+    environment:
+      DB_HOST: db
+      DB_PORT: "5432"
+      APP_ENV: production
+      APP_DEBUG: "false"
+      LOG_CHANNEL: stderr
+      PORT: "8080"
+    ports:
+      - "8080:8080"
+
 volumes:
   pgdata:
