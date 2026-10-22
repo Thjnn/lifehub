@@ -176,7 +176,8 @@ class AiTest extends TestCase
     public static function providerFailures(): array
     {
         return [
-            'quota' => [429, ['error' => ['message' => 'quota']], 'AI Coach đang quá tải (hết hạn mức miễn phí), thử lại sau ít phút.'],
+            'per-minute quota' => [429, ['error' => ['message' => 'quota', 'details' => [['violations' => [['quotaId' => 'GenerateRequestsPerMinutePerProjectPerModel-FreeTier']]]]]], 'AI Coach đang quá tải (hết lượt miễn phí theo phút), thử lại sau 1 phút.'],
+            'daily quota' => [429, ['error' => ['message' => 'quota', 'details' => [['violations' => [['quotaId' => 'GenerateRequestsPerDayPerProjectPerModel-FreeTier']]]]]], 'Đã hết lượt AI miễn phí của Google cho hôm nay. Bạn thử lại vào ngày mai nhé.'],
             'retired model' => [404, ['error' => ['message' => 'models/x is not found']], 'Không tìm thấy model "gemini-test". Kiểm tra biến GEMINI_MODEL.'],
             'invalid key' => [400, ['error' => ['message' => 'API key not valid. Please pass a valid API key.', 'status' => 'INVALID_ARGUMENT']], 'GEMINI_API_KEY không hợp lệ. Tạo lại key trong AI Studio và cập nhật trên Render.'],
             'forbidden key' => [403, ['error' => ['message' => 'Permission denied']], 'GEMINI_API_KEY không có quyền dùng Gemini API (key bị chặn hoặc chưa bật API).'],
@@ -209,6 +210,18 @@ class AiTest extends TestCase
 
         Http::assertSentCount(3); // main model twice (retry), then the fallback
         $this->assertDatabaseHas('ai_messages', ['role' => 'assistant', 'model' => 'gemini-lite-test']);
+    }
+
+    public function test_out_of_quota_model_falls_back_without_retrying(): void
+    {
+        Http::fake([
+            'generativelanguage.googleapis.com/*/gemini-test:*' => Http::response(['error' => ['message' => 'quota']], 429),
+            'generativelanguage.googleapis.com/*/gemini-lite-test:*' => Http::response(self::text('ok')),
+        ]);
+
+        $this->actingAs($this->user)->postJson('/api/v1/ai/chat', ['message' => 'hi'])->assertOk();
+
+        Http::assertSentCount(2); // quotas are per model: retrying the same one is pointless
     }
 
     public function test_missing_key_is_a_friendly_503(): void
