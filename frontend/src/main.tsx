@@ -10,6 +10,19 @@ import { PwaUpdatePrompt } from '@/components/shared/PwaUpdatePrompt'
 import { ServerWakingBanner } from '@/components/shared/ServerWakingBanner'
 import { Toaster } from '@/components/ui/sonner'
 
+// A tab still running an old build can ask for a lazy chunk (e.g. the calendar) that a newer deploy deleted.
+// Reload once to get the current build; the flag stops a reload loop if the file is really gone.
+window.addEventListener('vite:preloadError', (event) => {
+  try {
+    if (sessionStorage.getItem('lifehub.reloaded-for-update')) return
+    sessionStorage.setItem('lifehub.reloaded-for-update', '1')
+  } catch {
+    return
+  }
+  event.preventDefault()
+  window.location.reload()
+})
+
 // IndexedDB read takes a few ms; doing it first lets the app open offline with the last data.
 await restoreOfflineCache()
 
