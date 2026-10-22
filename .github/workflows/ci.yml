@@ -27,6 +27,17 @@ jobs:
     defaults:
       run:
         working-directory: backend
+    # Production is Postgres: run the suite on it too (CHECK constraints, uuid, timestamptz) — phpunit.xml defaults to SQLite.
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: lifehub_test
+          POSTGRES_USER: lifehub
+          POSTGRES_PASSWORD: secret
+        ports:
+          - 5432:5432
+        options: --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
     steps:
       - uses: actions/checkout@v4
       - uses: shivammathur/setup-php@v2
@@ -38,3 +49,12 @@ jobs:
       - run: cp .env.example .env && php artisan key:generate
       - run: vendor/bin/pint --test
       - run: composer test
+      - name: Tests on Postgres
+        run: vendor/bin/phpunit
+        env:
+          DB_CONNECTION: pgsql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 5432
+          DB_DATABASE: lifehub_test
+          DB_USERNAME: lifehub
+          DB_PASSWORD: secret

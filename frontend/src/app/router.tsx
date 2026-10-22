@@ -9,6 +9,7 @@ import { LoginPage } from '@/features/auth/LoginPage'
 import { RegisterPage } from '@/features/auth/RegisterPage'
 import { ResetPasswordPage } from '@/features/auth/ResetPasswordPage'
 import { LandingPage } from '@/features/landing/LandingPage'
+import { TasksPage } from '@/features/tasks/TasksPage'
 import { AppLayout } from '@/layouts/AppLayout'
 import { AuthLayout } from '@/layouts/AuthLayout'
 import { ApiError, tokenStore } from '@/lib/api-client'
@@ -53,7 +54,7 @@ export const router = createBrowserRouter([
       { index: true, element: <Navigate to="dashboard" replace /> },
       page('dashboard', 'Tổng quan'),
       page('calendar', 'Lịch'),
-      page('tasks', 'Công việc'),
+      { path: 'tasks', element: <TasksPage />, handle: { title: 'Công việc' } },
       {
         path: 'finance',
         children: [

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\V1\Auth\AuthController;
 use App\Http\Controllers\Api\V1\Auth\PasswordResetController;
+use App\Http\Controllers\Api\V1\TaskController;
 use App\Http\Resources\UserResource;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -29,5 +30,11 @@ Route::prefix('v1')->group(function () {
     Route::middleware('auth:sanctum')->group(function () {
         Route::post('/auth/logout', [AuthController::class, 'logout']);
         Route::get('/me', fn (Request $request) => new UserResource($request->user()->load('settings')));
+
+        // whereUuid: a malformed id is a 404, not a Postgres "invalid input syntax for type uuid" 500.
+        Route::get('/tasks', [TaskController::class, 'index']);
+        Route::put('/tasks/{id}', [TaskController::class, 'upsert'])->whereUuid('id');
+        Route::post('/tasks/{task}/complete', [TaskController::class, 'complete'])->whereUuid('task');
+        Route::delete('/tasks/{task}', [TaskController::class, 'destroy'])->whereUuid('task');
     });
 });
