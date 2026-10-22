@@ -21,6 +21,23 @@ class ProfileTest extends TestCase
         $this->actingAs($user)->patchJson('/api/v1/me', ['name' => ''])->assertJsonValidationErrors('name');
     }
 
+    public function test_avatar_accepts_raster_data_urls_only_and_can_be_removed(): void
+    {
+        $user = User::factory()->create();
+        $webp = 'data:image/webp;base64,UklGRhYAAABXRUJQVlA4TAoAAAAvAAAAAEX/I/of';
+
+        $this->actingAs($user)->patchJson('/api/v1/me', ['avatar' => $webp])
+            ->assertOk()
+            ->assertJsonPath('data.avatar', $webp)
+            ->assertJsonPath('data.name', $user->name); // other fields untouched
+        $this->actingAs($user)->patchJson('/api/v1/me', ['avatar' => 'data:image/svg+xml;base64,PHN2Zz48L3N2Zz4='])
+            ->assertJsonValidationErrors('avatar');
+        $this->actingAs($user)->patchJson('/api/v1/me', ['avatar' => 'https://example.com/a.png'])
+            ->assertJsonValidationErrors('avatar');
+
+        $this->actingAs($user)->patchJson('/api/v1/me', ['avatar' => null])->assertJsonPath('data.avatar', null);
+    }
+
     public function test_password_change_needs_the_current_one_and_signs_out_other_devices(): void
     {
         $user = User::factory()->create();

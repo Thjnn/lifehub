@@ -18,6 +18,7 @@ class UserResource extends JsonResource
             'id' => $this->id,
             'name' => $this->name,
             'email' => $this->email,
+            'avatar' => $this->avatar,
             'settings' => $this->whenLoaded('settings', fn () => [
                 'timezone' => $this->settings->timezone,
                 'locale' => $this->settings->locale,

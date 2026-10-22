@@ -17,7 +17,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { QuickCreate } from '@/components/shared/QuickCreate'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { UserAvatar } from '@/components/shared/UserAvatar'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -31,15 +31,6 @@ import { logout, meQuery } from '@/features/auth/api'
 import { useInstallPrompt } from '@/hooks/use-install-prompt'
 import { usePageTitle } from '@/hooks/use-page-title'
 import { db } from '@/offline/db'
-
-// "Nguyễn Văn Minh" → "VM"
-const initials = (name: string) =>
-  name
-    .trim()
-    .split(/\s+/)
-    .slice(-2)
-    .map((word) => word[0]?.toUpperCase())
-    .join('')
 
 export function Topbar() {
   const title = usePageTitle()
@@ -89,9 +80,7 @@ export function Topbar() {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button type="button" aria-label="Tài khoản" className="rounded-full">
-              <Avatar>
-                <AvatarFallback>{user ? initials(user.name) : '…'}</AvatarFallback>
-              </Avatar>
+              <UserAvatar user={user} />
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">

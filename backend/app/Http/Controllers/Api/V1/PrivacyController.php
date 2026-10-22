@@ -21,7 +21,7 @@ class PrivacyController extends Controller
         $user = $request->user();
         $data = [
             'exported_at' => now()->toIso8601String(),
-            'user' => $user->only(['id', 'name', 'email', 'created_at']),
+            'user' => $user->only(['id', 'name', 'email', 'avatar', 'created_at']),
         ];
         foreach (self::TABLES as $table) {
             $data[$table] = DB::table($table)->where('user_id', $user->id)->get();

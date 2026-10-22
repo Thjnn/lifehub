@@ -8,6 +8,7 @@ export type User = {
   id: number
   name: string
   email: string
+  avatar: string | null // data URL (256px), see features/settings/avatar.ts
   settings: {
     timezone: string
     locale: string

@@ -128,7 +128,6 @@
                     "Profile"
                 ],
                 "requestBody": {
-                    "required": true,
                     "content": {
                         "application/json": {
                             "schema": {
@@ -137,11 +136,17 @@
                                     "name": {
                                         "type": "string",
                                         "maxLength": 255
+                                    },
+                                    "avatar": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "description": "Raster data URL only (an SVG could carry script); ~200 KB cap, the client sends far less.",
+                                        "pattern": "#^data:image/(webp|jpeg|png);base64,[A-Za-z0-9+/]+={0,2}$#",
+                                        "maxLength": 200000
                                     }
-                                },
-                                "required": [
-                                    "name"
-                                ]
+                                }
                             }
                         }
                     }
@@ -4075,6 +4080,12 @@
                     "email": {
                         "type": "string"
                     },
+                    "avatar": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
                     "settings": {
                         "type": "object",
                         "properties": {
@@ -4142,7 +4153,8 @@
                 "required": [
                     "id",
                     "name",
-                    "email"
+                    "email",
+                    "avatar"
                 ],
                 "title": "UserResource"
             }
