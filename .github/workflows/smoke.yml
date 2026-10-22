@@ -1,0 +1,20 @@
+name: Smoke
+
+# Runs against production after Vercel reports a successful production deployment
+# (Vercel's GitHub integration posts deployment statuses), and on demand.
+on:
+  deployment_status:
+  workflow_dispatch:
+
+jobs:
+  frontend:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.deployment_status.state == 'success' && github.event.deployment.environment == 'Production')
+    runs-on: ubuntu-latest
+    env:
+      # The stable production domain (per-deployment URLs are behind Vercel login).
+      FRONTEND_URL: ${{ vars.FRONTEND_URL || 'https://lifehub-frontend-mu.vercel.app' }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash .github/scripts/smoke-frontend.sh "$FRONTEND_URL"

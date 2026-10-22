@@ -40,6 +40,8 @@ npm run generate-pwa-assets             # regenerate public/icons/* from public/
 npx shadcn@latest add <component>       # shadcn/ui (radix base, Tailwind v4)
 ```
 
+Smoke test after each Vercel production deploy (`.github/workflows/smoke.yml`, script `.github/scripts/smoke-frontend.sh <url>`, also runnable locally): deep links serve HTML, the current CSS is text/css, **a missing /assets file must 404** (never index.html — that broke phones once), sw.js not cached.
+
 CI (`.github/workflows/ci.yml`) runs frontend lint + build and backend Pint `--test` + `composer test` on every push.
 
 Tests run on **SQLite in-memory** (`backend/phpunit.xml`), not Postgres. Postgres-specific behavior (CHECK constraints, `TIMESTAMPTZ`, `JSONB`, `NUMERIC` precision) is not exercised by default — when a test depends on it, point it at Postgres explicitly.
