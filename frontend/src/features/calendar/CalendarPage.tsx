@@ -14,15 +14,21 @@ import { calendarTasksQuery, eventsQuery, type EventType, type Occurrence } from
 import { EventFormSheet, type NewEventDefaults } from '@/features/calendar/EventFormSheet'
 import { eventTypeColor, eventTypeOptions } from '@/features/calendar/labels'
 import { LunarDayCell, LunarDayHeader } from '@/features/calendar/lunar-render'
+import { accountsQuery, debtsDueQuery, type DueItem } from '@/features/finance/api'
+import { dueItemTitle, settleDefaults } from '@/features/finance/debts'
+import { TransactionFormSheet, type TransactionDefaults } from '@/features/finance/TransactionFormSheet'
 import type { Task } from '@/features/tasks/api'
 import { isOverdue } from '@/features/tasks/labels'
 import { TaskFormSheet } from '@/features/tasks/TaskFormSheet'
 import { useIsDesktop } from '@/hooks/use-media-query'
 import { useOnlineStatus } from '@/hooks/use-online-status'
+import { dateKey } from '@/lib/format'
 import { formatLunar, lunarYearName, toLunar } from '@/lib/lunar'
+import { formatVnd } from '@/lib/money'
 import { cn } from '@/lib/utils'
 
-type Range = { from: string; to: string }
+// from/to: ISO instants (events, tasks); firstDay/lastDay: local dates (debt repayments are date-only)
+type Range = { from: string; to: string; firstDay: string; lastDay: string }
 
 // Per-device preference; storage can be unavailable (private mode), so fall back to "on".
 const LUNAR_KEY = 'lifehub.calendar.lunar'
@@ -55,6 +61,10 @@ export function CalendarPage() {
   const [range, setRange] = useState<Range>()
   const events = useQuery({ ...eventsQuery(range?.from ?? '', range?.to ?? ''), enabled: !!range, placeholderData: keepPreviousData })
   const tasks = useQuery({ ...calendarTasksQuery(range?.from ?? '', range?.to ?? ''), enabled: !!range, placeholderData: keepPreviousData })
+  // Debt repayments are date-only: shown in the all-day row / as all-day items.
+  const debts = useQuery({ ...debtsDueQuery(range?.firstDay ?? '', range?.lastDay ?? ''), enabled: !!range, placeholderData: keepPreviousData })
+  const accounts = useQuery({ ...accountsQuery, enabled: !!range })
+  const [settling, setSettling] = useState<TransactionDefaults>()
 
   const [hiddenTypes, setHiddenTypes] = useState<EventType[]>([])
   const [showLunar, setShowLunar] = useState(readLunarPref)
@@ -88,17 +98,36 @@ export function CalendarPage() {
       classNames: ['lh-task', isOverdue(t) ? 'lh-overdue' : '', t.status === 'completed' ? 'lh-done' : ''],
       extendedProps: { kind: 'task', task: t },
     }))
-    return [...occurrences, ...deadlines]
-  }, [events.data, tasks.data, hiddenTypes])
+    const repayments = (debts.data ?? []).map((d) => ({
+      id: `debt-${d.account_id}-${d.due_date}`,
+      title: `${d.paid ? '✓' : '💳'} ${dueItemTitle(d)} · ${formatVnd(d.amount)}`,
+      start: d.due_date,
+      allDay: true,
+      classNames: ['lh-debt', d.overdue ? 'lh-overdue' : '', d.paid ? 'lh-done' : ''],
+      extendedProps: { kind: 'debt', due: d },
+    }))
+    return [...occurrences, ...deadlines, ...repayments]
+  }, [events.data, tasks.data, debts.data, hiddenTypes])
 
   function handleDatesSet(arg: DatesSetArg) {
-    const next = { from: arg.start.toISOString(), to: arg.end.toISOString() }
+    const next = {
+      from: arg.start.toISOString(),
+      to: arg.end.toISOString(),
+      firstDay: dateKey(arg.start),
+      lastDay: dateKey(new Date(arg.end.getTime() - 1)), // end is exclusive
+    }
     setRange((prev) => (prev?.from === next.from && prev?.to === next.to ? prev : next))
+  }
+
+  function settle(due: DueItem) {
+    const account = accounts.data?.find((a) => a.id === due.account_id)
+    if (account && online) setSettling(settleDefaults(account, due.amount, accounts.data ?? []))
   }
 
   function handleEventClick(info: EventClickArg) {
     const { kind, occurrence, task } = info.event.extendedProps
     if (kind === 'task') setEditingTask(task)
+    else if (kind === 'debt') settle(info.event.extendedProps.due as DueItem)
     else setEditing(occurrence)
   }
 
@@ -191,7 +220,7 @@ export function CalendarPage() {
           buttonText={{ prev: '‹', next: '›', list: 'Danh sách' }}
           buttonHints={{ prev: 'Trước', next: 'Sau', today: 'Hôm nay' }}
           height={isDesktop ? 'calc(100dvh - 15rem)' : 'auto'}
-          allDaySlot={false}
+          allDayText="Cả ngày"
           nowIndicator
           scrollTime="07:00:00"
           eventTimeFormat={{ hour: '2-digit', minute: '2-digit', hour12: false }}
@@ -216,6 +245,7 @@ export function CalendarPage() {
         defaults={newSlot}
       />
       <TaskFormSheet open={editingTask !== undefined} onOpenChange={(open) => !open && setEditingTask(undefined)} task={editingTask} />
+      <TransactionFormSheet open={settling !== undefined} onOpenChange={(open) => !open && setSettling(undefined)} defaults={settling} />
     </div>
   )
 }

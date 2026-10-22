@@ -24,6 +24,9 @@ class AccountResource extends JsonResource
             // Present when loaded via Account::withBalance()
             'balance' => $this->when(isset($this->balance), fn () => Money::format($this->balance)),
             'is_active' => $this->is_active,
+            'due_date' => $this->due_date?->toDateString(),
+            'due_day' => $this->due_day,
+            'installment_amount' => $this->installment_amount === null ? null : Money::format($this->installment_amount),
         ];
     }
 }

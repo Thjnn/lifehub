@@ -1,13 +1,12 @@
-import { Banknote, Landmark, Smartphone, type LucideIcon } from 'lucide-react'
 import type { AccountType, TransactionType } from '@/features/finance/api'
 
-export const accountTypeOptions: { value: AccountType; label: string; icon: LucideIcon }[] = [
-  { value: 'cash', label: 'Tiền mặt', icon: Banknote },
-  { value: 'bank', label: 'Ngân hàng', icon: Landmark },
-  { value: 'ewallet', label: 'Ví điện tử', icon: Smartphone },
+export const accountTypeOptions: { value: AccountType; label: string }[] = [
+  { value: 'cash', label: 'Tiền mặt' },
+  { value: 'bank', label: 'Ngân hàng' },
+  { value: 'ewallet', label: 'Ví điện tử' },
+  { value: 'liability', label: 'Nợ / Trả sau' },
+  { value: 'receivable', label: 'Cho vay' },
 ]
-
-export const accountTypeIcon = (type: AccountType) => accountTypeOptions.find((o) => o.value === type)!.icon
 
 export const transactionTypeOptions: { value: TransactionType; label: string }[] = [
   { value: 'expense', label: 'Chi' },

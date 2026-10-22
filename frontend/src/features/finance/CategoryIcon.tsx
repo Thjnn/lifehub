@@ -1,5 +1,5 @@
-import { ArrowLeftRight, BookOpen, Bus, Dumbbell, Ellipsis, Gamepad2, House, Tag, Utensils, Wallet, type LucideIcon } from 'lucide-react'
-import type { Category } from '@/features/finance/api'
+import { ArrowLeftRight, Banknote, BookOpen, CreditCard, HandCoins, Landmark, Smartphone, Bus, Dumbbell, Ellipsis, Gamepad2, House, Tag, Utensils, Wallet, type LucideIcon } from 'lucide-react'
+import type { AccountType, Category } from '@/features/finance/api'
 import { cn } from '@/lib/utils'
 
 // Icons named by the system categories (migration). Custom categories fall back to a tag.
@@ -27,4 +27,20 @@ export function CategoryIcon({ category, transfer, className }: { category?: Cat
       <Icon className="size-4" />
     </span>
   )
+}
+
+// Static switch (no component picked at render time — keeps React's static-components rule happy).
+export function AccountTypeIcon({ type, className }: { type: AccountType; className?: string }) {
+  switch (type) {
+    case 'cash':
+      return <Banknote className={className} aria-hidden />
+    case 'bank':
+      return <Landmark className={className} aria-hidden />
+    case 'ewallet':
+      return <Smartphone className={className} aria-hidden />
+    case 'liability':
+      return <CreditCard className={className} aria-hidden />
+    case 'receivable':
+      return <HandCoins className={className} aria-hidden />
+  }
 }

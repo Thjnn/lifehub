@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\V1\Auth\AuthController;
 use App\Http\Controllers\Api\V1\Auth\PasswordResetController;
 use App\Http\Controllers\Api\V1\BudgetController;
 use App\Http\Controllers\Api\V1\CategoryController;
+use App\Http\Controllers\Api\V1\DebtController;
 use App\Http\Controllers\Api\V1\EventController;
 use App\Http\Controllers\Api\V1\FinanceReportController;
 use App\Http\Controllers\Api\V1\TaskController;
@@ -68,5 +69,6 @@ Route::prefix('v1')->group(function () {
         Route::delete('/budgets/{budget}', [BudgetController::class, 'destroy'])->whereNumber('budget');
 
         Route::get('/reports/finance', FinanceReportController::class);
+        Route::get('/debts/due', [DebtController::class, 'due']);
     });
 });

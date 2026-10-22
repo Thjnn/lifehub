@@ -59,3 +59,12 @@ export function formatDayHeader(d: Date, now = new Date()) {
   const weekday = weekdayFormat.format(d)
   return `${weekday.charAt(0).toUpperCase()}${weekday.slice(1)}, ${dayMonth(d)}`
 }
+
+// Local calendar date as "YYYY-MM-DD" (what /debts/due expects)
+export const dateKey = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+
+// "2026-11-10" → Date at local midnight (new Date("2026-11-10") would be UTC midnight)
+export const fromDateKey = (key: string) => {
+  const [y, m, d] = key.split('-').map(Number)
+  return new Date(y, m - 1, d)
+}

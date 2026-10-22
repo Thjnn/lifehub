@@ -186,3 +186,17 @@
   font-size: 1.25rem;
   line-height: 1;
 }
+/* Debt repayments (date-only items) */
+.fc.fc .lh-debt {
+  border-color: var(--warning);
+  background: color-mix(in oklab, var(--warning) 15%, transparent);
+  color: var(--foreground);
+}
+.fc.fc .lh-debt .fc-event-title,
+.fc.fc .lh-debt .fc-event-main {
+  color: var(--foreground);
+}
+.fc.fc .lh-debt.lh-overdue {
+  border-color: var(--destructive);
+  background: color-mix(in oklab, var(--destructive) 15%, transparent);
+}

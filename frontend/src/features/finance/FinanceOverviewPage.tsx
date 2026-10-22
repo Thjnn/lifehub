@@ -4,13 +4,15 @@ import { ArrowRight, Plus } from 'lucide-react'
 import { Link } from 'react-router'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
-import { accountsQuery, budgetsQuery, categoriesQuery, reportQuery, transactionsQuery } from '@/features/finance/api'
+import { accountsQuery, budgetsQuery, categoriesQuery, debtsDueQuery, reportQuery, transactionsQuery } from '@/features/finance/api'
 import { BudgetMeter } from '@/features/finance/BudgetMeter'
 import { CategoryIcon } from '@/features/finance/CategoryIcon'
+import { dueItemTitle, settleDefaults } from '@/features/finance/debts'
 import { budgetStatus } from '@/features/finance/report-math'
 import { StatTile } from '@/features/finance/StatTile'
+import { TransactionFormSheet, type TransactionDefaults } from '@/features/finance/TransactionFormSheet'
 import { useOnlineStatus } from '@/hooks/use-online-status'
-import { formatDue, monthKey } from '@/lib/format'
+import { dateKey, formatDayHeader, formatDue, fromDateKey, monthKey } from '@/lib/format'
 import { formatVnd, sumMoney } from '@/lib/money'
 import { cn } from '@/lib/utils'
 
@@ -18,6 +20,13 @@ import { cn } from '@/lib/utils'
 export function FinanceOverviewPage() {
   const online = useOnlineStatus()
   const [month] = useState(() => monthKey(new Date()))
+  // Unpaid repayments: anything overdue in the last month, plus the next two weeks.
+  const [dueRange] = useState(() => {
+    const today = new Date()
+    return [dateKey(new Date(today.getFullYear(), today.getMonth(), today.getDate() - 31)), dateKey(new Date(today.getFullYear(), today.getMonth(), today.getDate() + 14))]
+  })
+  const dues = useQuery(debtsDueQuery(dueRange[0], dueRange[1]))
+  const [settling, setSettling] = useState<TransactionDefaults>()
   const accounts = useQuery(accountsQuery)
   const categories = useQuery(categoriesQuery)
   const report = useQuery(reportQuery(month))
@@ -28,6 +37,7 @@ export function FinanceOverviewPage() {
   const attention = (budgets.data ?? []).filter((b) => budgetStatus(b) !== 'ok')
   const latest = recent.data?.pages[0]?.data.slice(0, 5) ?? []
   const category = (id: number | null) => categories.data?.find((c) => c.id === id)
+  const unpaid = (dues.data ?? []).filter((d) => !d.paid)
 
   return (
     <div className="flex flex-col gap-4">
@@ -47,6 +57,37 @@ export function FinanceOverviewPage() {
           </>
         ) : null}
       </div>
+
+      {unpaid.length > 0 && (
+        <section className="flex flex-col gap-3 rounded-xl border bg-card p-4">
+          <SectionHeader title="Sắp đến hạn trả" to="/app/finance/accounts" />
+          <ul className="flex flex-col gap-3">
+            {unpaid.map((d) => (
+              <li key={`${d.account_id}-${d.due_date}`} className="flex items-center gap-3">
+                <span className="flex min-w-0 flex-1 flex-col">
+                  <span className="truncate text-sm">{dueItemTitle(d)}</span>
+                  <span className={cn('text-xs', d.overdue ? 'text-destructive' : 'text-muted-foreground')}>
+                    {d.overdue ? 'Quá hạn · ' : ''}
+                    {formatDayHeader(fromDateKey(d.due_date))}
+                  </span>
+                </span>
+                <span className="text-sm font-medium tabular-nums">{formatVnd(d.amount)}</span>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={!online || !accounts.data}
+                  onClick={() => {
+                    const account = accounts.data?.find((a) => a.id === d.account_id)
+                    if (account) setSettling(settleDefaults(account, d.amount, accounts.data ?? []))
+                  }}
+                >
+                  {d.account_type === 'liability' ? 'Trả' : 'Thu'}
+                </Button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <div className="grid gap-4 lg:grid-cols-2">
         <section className="flex flex-col gap-3 rounded-xl border bg-card p-4">
@@ -107,6 +148,7 @@ export function FinanceOverviewPage() {
           )}
         </section>
       </div>
+      <TransactionFormSheet open={settling !== undefined} onOpenChange={(open) => !open && setSettling(undefined)} defaults={settling} />
     </div>
   )
 }

@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['name', 'account_type', 'opening_balance', 'is_active'])]
+#[Fillable(['name', 'account_type', 'opening_balance', 'is_active', 'due_date', 'due_day', 'installment_amount'])]
 class Account extends Model
 {
     /** @use HasFactory<AccountFactory> */
@@ -27,6 +27,9 @@ class Account extends Model
             'account_type' => AccountType::class,
             'opening_balance' => 'decimal:2',
             'is_active' => 'boolean',
+            'due_date' => 'date:Y-m-d',
+            'due_day' => 'integer',
+            'installment_amount' => 'decimal:2',
         ];
     }
 

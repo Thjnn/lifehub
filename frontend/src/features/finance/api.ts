@@ -1,7 +1,9 @@
 import { infiniteQueryOptions, queryOptions, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api, toQuery } from '@/lib/api-client'
 
-export type AccountType = 'cash' | 'bank' | 'ewallet'
+// liability = I owe (SPayLater, credit card, borrowed; balance negative); receivable = owed to me (balance positive)
+export type AccountType = 'cash' | 'bank' | 'ewallet' | 'liability' | 'receivable'
+export const isDebtType = (type: AccountType) => type === 'liability' || type === 'receivable'
 export type TransactionType = 'income' | 'expense' | 'transfer'
 
 // Money fields are decimal strings ("150000.00") — see lib/money.ts.
@@ -13,6 +15,10 @@ export type Account = {
   opening_balance: string
   balance: string
   is_active: boolean
+  // Repayment schedule (debt accounts only): one date, or a day of every month
+  due_date: string | null
+  due_day: number | null
+  installment_amount: string | null
 }
 
 export type Category = {
@@ -53,6 +59,7 @@ export const financeKeys = {
   transactions: ['transactions'] as const,
   budgets: ['budgets'] as const,
   reports: ['reports'] as const,
+  debts: ['debts'] as const,
 }
 
 export const accountsQuery = queryOptions({
@@ -79,7 +86,7 @@ function useInvalidateMoney() {
   const queryClient = useQueryClient()
   return () =>
     Promise.all(
-      [financeKeys.transactions, financeKeys.accounts, financeKeys.budgets, financeKeys.reports].map((queryKey) =>
+      [financeKeys.transactions, financeKeys.accounts, financeKeys.budgets, financeKeys.reports, financeKeys.debts].map((queryKey) =>
         queryClient.invalidateQueries({ queryKey }),
       ),
     )
@@ -102,7 +109,9 @@ export function useDeleteTransaction() {
   })
 }
 
-export type AccountInput = Pick<Account, 'name' | 'account_type' | 'opening_balance'> & { is_active?: boolean }
+export type AccountInput = Pick<Account, 'name' | 'account_type' | 'opening_balance' | 'due_date' | 'due_day' | 'installment_amount'> & {
+  is_active?: boolean
+}
 
 export function useSaveAccount() {
   const invalidate = useInvalidateMoney()
@@ -186,4 +195,22 @@ export const reportQuery = (month: string) =>
   queryOptions({
     queryKey: [...financeKeys.reports, month],
     queryFn: async () => (await api<{ data: FinanceReport }>(`/reports/finance?month=${month}`)).data,
+  })
+
+// A repayment due on a local date (YYYY-MM-DD); amount is this instalment, outstanding the whole remaining debt.
+export type DueItem = {
+  account_id: number
+  account_name: string
+  account_type: 'liability' | 'receivable'
+  due_date: string
+  amount: string
+  outstanding: string
+  paid: boolean
+  overdue: boolean
+}
+
+export const debtsDueQuery = (from: string, to: string) =>
+  queryOptions({
+    queryKey: [...financeKeys.debts, from, to],
+    queryFn: async () => (await api<{ data: DueItem[] }>(`/debts/due?${toQuery({ from, to })}`)).data,
   })

@@ -53,9 +53,12 @@ const schema = z
     message: 'Tài khoản nhận phải khác tài khoản nguồn',
   })
 
-type Props = { open: boolean; onOpenChange: (open: boolean) => void; transaction?: Transaction }
+// Prefill for a new transaction, e.g. "Trả nợ" opens a transfer into the debt account with the instalment amount.
+export type TransactionDefaults = Partial<{ type: TransactionType; amount: string; account_id: number; to_account_id: number; description: string }>
 
-export function TransactionFormSheet({ open, onOpenChange, transaction }: Props) {
+type Props = { open: boolean; onOpenChange: (open: boolean) => void; transaction?: Transaction; defaults?: TransactionDefaults }
+
+export function TransactionFormSheet({ open, onOpenChange, transaction, defaults }: Props) {
   const isDesktop = useIsDesktop()
 
   return (
@@ -67,7 +70,12 @@ export function TransactionFormSheet({ open, onOpenChange, transaction }: Props)
         <SheetHeader>
           <SheetTitle>{transaction ? 'Sửa giao dịch' : 'Giao dịch mới'}</SheetTitle>
         </SheetHeader>
-        <TransactionForm key={transaction?.id ?? 'new'} transaction={transaction} onDone={() => onOpenChange(false)} />
+        <TransactionForm
+          key={transaction?.id ?? JSON.stringify(defaults ?? {})}
+          transaction={transaction}
+          defaults={defaults}
+          onDone={() => onOpenChange(false)}
+        />
       </SheetContent>
     </Sheet>
   )
@@ -78,7 +86,7 @@ function nowLocal() {
 }
 
 // Waits for accounts/categories so the form's defaults (first account) are known when it mounts.
-function TransactionForm({ transaction, onDone }: { transaction?: Transaction; onDone: () => void }) {
+function TransactionForm({ transaction, defaults, onDone }: { transaction?: Transaction; defaults?: TransactionDefaults; onDone: () => void }) {
   const accounts = useQuery(accountsQuery)
   const categories = useQuery(categoriesQuery)
 
@@ -92,16 +100,20 @@ function TransactionForm({ transaction, onDone }: { transaction?: Transaction; o
       </div>
     )
   }
-  return <TransactionFormBody transaction={transaction} accounts={accounts.data} categories={categories.data} onDone={onDone} />
+  return (
+    <TransactionFormBody transaction={transaction} defaults={defaults} accounts={accounts.data} categories={categories.data} onDone={onDone} />
+  )
 }
 
 function TransactionFormBody({
   transaction,
+  defaults,
   accounts,
   categories,
   onDone,
 }: {
   transaction?: Transaction
+  defaults?: TransactionDefaults
   accounts: Account[]
   categories: Category[]
   onDone: () => void
@@ -127,13 +139,17 @@ function TransactionFormBody({
   } = useForm({
     resolver: zodResolver(schema),
     defaultValues: {
-      type: transaction?.type ?? 'expense',
-      amount: transaction ? transaction.amount.split('.')[0] : '',
-      account_id: transaction ? String(transaction.account_id) : firstAccount,
-      to_account_id: transaction?.to_account_id ? String(transaction.to_account_id) : '',
+      type: transaction?.type ?? defaults?.type ?? 'expense',
+      amount: transaction ? transaction.amount.split('.')[0] : (defaults?.amount ?? ''),
+      account_id: transaction ? String(transaction.account_id) : defaults?.account_id ? String(defaults.account_id) : firstAccount,
+      to_account_id: transaction?.to_account_id
+        ? String(transaction.to_account_id)
+        : defaults?.to_account_id
+          ? String(defaults.to_account_id)
+          : '',
       category_id: transaction?.category_id ? String(transaction.category_id) : NO_CATEGORY,
       occurred: transaction ? toDateTimeLocal(transaction.occurred_at) : nowLocal(),
-      description: transaction?.description ?? '',
+      description: transaction?.description ?? defaults?.description ?? '',
     },
   })
   const type = useWatch({ control, name: 'type' })
