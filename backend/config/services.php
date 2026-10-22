@@ -26,7 +26,7 @@ return [
     // Google renames models often — set GEMINI_MODEL to a Flash model listed in AI Studio.
     'gemini' => [
         'key' => env('GEMINI_API_KEY'),
-        'model' => env('GEMINI_MODEL', 'gemini-2.5-flash'),
+        'model' => env('GEMINI_MODEL', 'gemini-3.8-flash'),
         'timeout' => (int) env('GEMINI_TIMEOUT', 25),
     ],
 

@@ -32,7 +32,8 @@ class Gemini
             'systemInstruction' => ['parts' => [['text' => $system]]],
             'contents' => $contents,
             // Generous output budget: on newer models internal 'thinking' tokens count against it too.
-            'generationConfig' => ['temperature' => 0.4, 'maxOutputTokens' => 4096],
+            // Temperature left at the model default — Google advises against lowering it for Gemini 3.
+            'generationConfig' => ['maxOutputTokens' => 4096],
         ];
         if ($functions) {
             $body['tools'] = [['functionDeclarations' => $functions]];

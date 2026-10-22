@@ -52,3 +52,11 @@ it('returns undefined for 204', async () => {
 
   await expect(api('/auth/logout', { method: 'POST' })).resolves.toBeUndefined()
 })
+
+it('shows the server message for a deliberate 503, a generic one for other 5xx', async () => {
+  mockFetch(503, { message: 'Không tìm thấy model "x". Kiểm tra biến GEMINI_MODEL.' })
+  await expect(api('/ai/briefing')).rejects.toMatchObject({ status: 503, message: 'Không tìm thấy model "x". Kiểm tra biến GEMINI_MODEL.' })
+
+  mockFetch(500, { message: 'Server Error' })
+  await expect(api('/x')).rejects.toMatchObject({ message: 'Máy chủ đang gặp lỗi, vui lòng thử lại sau.' })
+})

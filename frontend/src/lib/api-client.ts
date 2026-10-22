@@ -48,6 +48,8 @@ export function toQuery(params: Record<string, string | number | boolean | strin
 
 function messageFor(status: number, serverMessage?: string) {
   if (status === 429) return 'Bạn thao tác quá nhanh, vui lòng thử lại sau ít phút.'
+  // 503 is a deliberate, user-facing "temporarily unavailable" (e.g. AI Coach: model not found, quota) — show it.
+  if (status === 503 && serverMessage) return serverMessage
   if (status >= 500) return 'Máy chủ đang gặp lỗi, vui lòng thử lại sau.'
   return serverMessage || 'Có lỗi xảy ra, vui lòng thử lại.'
 }
