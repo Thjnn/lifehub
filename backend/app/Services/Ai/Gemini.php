@@ -4,6 +4,7 @@ namespace App\Services\Ai;
 
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Minimal client for the Gemini REST API (generateContent with function calling).
@@ -47,14 +48,20 @@ class Gemini
             throw new AiUnavailable('AI Coach phản hồi quá lâu, vui lòng thử lại.');
         }
 
-        if ($response->status() === 429) {
-            throw new AiUnavailable('AI Coach đang quá tải (hết hạn mức miễn phí), thử lại sau ít phút.');
-        }
-        if ($response->status() === 404) {
-            throw new AiUnavailable("Không tìm thấy model \"{$model}\". Kiểm tra biến GEMINI_MODEL.");
-        }
         if ($response->failed()) {
-            throw new AiUnavailable('AI Coach đang gặp lỗi, vui lòng thử lại sau.');
+            $status = $response->status();
+            $reason = (string) $response->json('error.message', '');
+            // stderr on Render: the provider's own explanation, without the key or the user's data.
+            Log::warning('Gemini request failed', ['status' => $status, 'model' => $model, 'reason' => mb_substr($reason, 0, 500)]);
+
+            throw new AiUnavailable(match (true) {
+                $status === 429 => 'AI Coach đang quá tải (hết hạn mức miễn phí), thử lại sau ít phút.',
+                $status === 404 => "Không tìm thấy model \"{$model}\". Kiểm tra biến GEMINI_MODEL.",
+                str_contains($reason, 'API key not valid') || str_contains($reason, 'API_KEY_INVALID') => 'GEMINI_API_KEY không hợp lệ. Tạo lại key trong AI Studio và cập nhật trên Render.',
+                $status === 403 => 'GEMINI_API_KEY không có quyền dùng Gemini API (key bị chặn hoặc chưa bật API).',
+                $status === 400 => "Gemini từ chối yêu cầu (mã 400): {$reason}",
+                default => "AI Coach đang gặp lỗi (mã {$status}), vui lòng thử lại sau.",
+            });
         }
 
         $parts = $response->json('candidates.0.content.parts');

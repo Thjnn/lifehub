@@ -172,6 +172,18 @@ class AiTest extends TestCase
             ->assertStatus(503)
             ->assertJsonPath('message', 'AI Coach đang quá tải (hết hạn mức miễn phí), thử lại sau ít phút.');
 
+        // Google answers a bad key with 400 + "API key not valid"
+        Http::fake(['generativelanguage.googleapis.com/*' => Http::response(['error' => ['code' => 400, 'message' => 'API key not valid. Please pass a valid API key.', 'status' => 'INVALID_ARGUMENT']], 400)]);
+        $this->actingAs($this->user)->getJson('/api/v1/ai/briefing')
+            ->assertStatus(503)
+            ->assertJsonPath('message', 'GEMINI_API_KEY không hợp lệ. Tạo lại key trong AI Studio và cập nhật trên Render.');
+
+        // Any other refusal keeps the provider's reason, so it can be fixed
+        Http::fake(['generativelanguage.googleapis.com/*' => Http::response(['error' => ['code' => 400, 'message' => 'Invalid JSON payload received.']], 400)]);
+        $this->actingAs($this->user)->getJson('/api/v1/ai/briefing')
+            ->assertStatus(503)
+            ->assertJsonPath('message', 'Gemini từ chối yêu cầu (mã 400): Invalid JSON payload received.');
+
         config(['services.gemini.key' => null]);
         $this->actingAs($this->user)->getJson('/api/v1/ai/briefing')->assertStatus(503);
     }
