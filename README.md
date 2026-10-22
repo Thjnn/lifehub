@@ -2,6 +2,8 @@
 
 Personal Life OS: quản lý lịch, công việc, tài chính kèm AI Coach. PWA cài được, hỗ trợ offline. Spec: [`docs/LIFEHUB_Project_Specification_v1.1.md`](docs/LIFEHUB_Project_Specification_v1.1.md).
 
+**Bản chạy thử:** https://lifehub-frontend-mu.vercel.app · API: https://lifehub-epzt.onrender.com/api/health (Render free ngủ sau ~15 phút, lần đầu mở mất 30–60 giây).
+
 ## Yêu cầu
 
 - PHP 8.3 + Composer (bật `pdo_pgsql`)
