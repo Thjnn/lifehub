@@ -9,35 +9,15 @@ use Illuminate\Support\Facades\Log;
 use Throwable;
 
 /**
- * Open-Meteo (spec §15.5): free, no API key, non-commercial use. Called from the backend only and cached,
- * so the app makes at most one forecast request per place per hour.
+ * Open-Meteo (spec §15.5): free, no API key, non-commercial use, limited per IP and day.
+ *
+ * The dashboard and city search call Open-Meteo from the browser (frontend features/dashboard/open-meteo.ts):
+ * from here every user shares Render's IP, whose daily quota other apps exhaust (HTTP 429). This client only
+ * feeds the AI Coach — best effort, cached an hour, and the AI simply goes without weather when it fails.
  */
 class OpenMeteo
 {
     private const FORECAST_URL = 'https://api.open-meteo.com/v1/forecast';
-
-    private const GEOCODING_URL = 'https://geocoding-api.open-meteo.com/v1/search';
-
-    /**
-     * @return list<array{name: string, region: string|null, country: string|null, latitude: float, longitude: float}>
-     */
-    public function searchCities(string $query): array
-    {
-        $results = Http::timeout(8)->get(self::GEOCODING_URL, [
-            'name' => $query,
-            'count' => 6,
-            'language' => 'vi',
-            'format' => 'json',
-        ])->throw()->json('results') ?? [];
-
-        return array_map(fn (array $r) => [
-            'name' => $r['name'],
-            'region' => $r['admin1'] ?? null,
-            'country' => $r['country'] ?? null,
-            'latitude' => (float) $r['latitude'],
-            'longitude' => (float) $r['longitude'],
-        ], $results);
-    }
 
     /**
      * Current conditions, the next hours and three days, in the user's timezone. Null if the provider is down.

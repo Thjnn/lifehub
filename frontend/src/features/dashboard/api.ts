@@ -3,7 +3,8 @@ import { meQuery, type City, type User } from '@/features/auth/api'
 import type { Occurrence } from '@/features/calendar/api'
 import type { AccountType } from '@/features/finance/api'
 import type { Task } from '@/features/tasks/api'
-import { api, toQuery } from '@/lib/api-client'
+import { fetchForecast } from '@/features/dashboard/open-meteo'
+import { api } from '@/lib/api-client'
 
 // GET /dashboard — one round trip for the home screen (spec §9.1); periods are in the user's timezone.
 export type Dashboard = {
@@ -19,23 +20,15 @@ export const dashboardQuery = queryOptions({
   queryFn: async () => (await api<{ data: Dashboard }>('/dashboard')).data,
 })
 
-export type Weather = {
-  city: string
-  current: { temperature: number; feels_like: number; weather_code: number; precipitation: number }
-  hourly: { time: string; temperature: number; precipitation_probability: number; weather_code: number }[]
-  daily: { date: string; weather_code: number; max: number; min: number; precipitation_probability: number }[]
-}
-
-// null = no city chosen yet, or the provider is unavailable
-export const weatherQuery = queryOptions({
-  queryKey: ['weather'],
-  queryFn: async () => (await api<{ data: Weather | null }>('/weather')).data,
-  staleTime: 30 * 60_000, // the backend caches an hour anyway
-})
-
-export type CityResult = City & { region: string | null; country: string | null }
-
-export const searchCities = async (q: string) => (await api<{ data: CityResult[] }>(`/weather/cities?${toQuery({ q })}`)).data
+// Forecast straight from Open-Meteo in the browser (see open-meteo.ts); null city = none chosen yet.
+export const weatherQuery = (city: City | null | undefined, timezone: string) =>
+  queryOptions({
+    queryKey: ['weather', city?.latitude, city?.longitude, timezone],
+    queryFn: () => fetchForecast(city!, timezone),
+    enabled: !!city,
+    staleTime: 30 * 60_000, // forecasts change slowly; also keeps us far from the per-IP quota
+    retry: 1,
+  })
 
 export function useUpdateSettings() {
   const queryClient = useQueryClient()
@@ -43,8 +36,8 @@ export function useUpdateSettings() {
     mutationFn: (input: { timezone?: string; city?: City | null }) => api<{ data: User }>('/me/settings', { method: 'PATCH', body: input }),
     onSuccess: ({ data }) => {
       queryClient.setQueryData(meQuery.queryKey, data)
-      // Timezone moves "today"/"this month" boundaries; the city changes the forecast.
-      return Promise.all([['weather'], ['dashboard'], ['budgets'], ['reports'], ['debts']].map((queryKey) => queryClient.invalidateQueries({ queryKey })))
+      // Timezone moves "today"/"this month" boundaries. (The weather query is keyed by city/timezone, so it refetches itself.)
+      return Promise.all([['dashboard'], ['budgets'], ['reports'], ['debts']].map((queryKey) => queryClient.invalidateQueries({ queryKey })))
     },
   })
 }

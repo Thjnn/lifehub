@@ -6,6 +6,7 @@ use App\Models\Account;
 use App\Models\Event;
 use App\Models\Task;
 use App\Models\User;
+use App\Services\Weather\OpenMeteo;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
@@ -70,49 +71,33 @@ class DashboardTest extends TestCase
         $this->actingAs($this->user)->patchJson('/api/v1/me/settings', ['city' => null])->assertJsonPath('data.settings.city', null);
     }
 
-    public function test_weather_is_fetched_once_per_hour_and_needs_a_city(): void
+    // Weather for the dashboard is fetched in the browser; the server-side client only feeds the AI Coach.
+    public function test_server_forecast_for_the_ai_is_cached_for_an_hour(): void
     {
-        $this->actingAs($this->user)->getJson('/api/v1/weather')->assertJsonPath('data', null);
-
         Http::fake(['api.open-meteo.com/*' => Http::response($this->forecastFixture())]);
-        $this->user->settings->update(['city_name' => 'Hà Nội', 'latitude' => 21.0285, 'longitude' => 105.8542]);
+        $weather = app(OpenMeteo::class);
 
-        $this->actingAs($this->user)->getJson('/api/v1/weather')
-            ->assertOk()
-            ->assertJsonPath('data.city', 'Hà Nội')
-            ->assertJsonPath('data.current.temperature', 27.4)
-            ->assertJsonPath('data.hourly.0.time', '2026-10-22T10:00') // starts at the current local hour
-            ->assertJsonCount(3, 'data.daily');
-        $this->actingAs($this->user)->getJson('/api/v1/weather')->assertOk();
+        $forecast = $weather->forecast(21.0285, 105.8542, 'Asia/Ho_Chi_Minh');
+        $weather->forecast(21.0285, 105.8542, 'Asia/Ho_Chi_Minh');
 
-        Http::assertSentCount(1); // second request served from cache
+        $this->assertSame(27.4, $forecast['current']['temperature']);
+        $this->assertSame('2026-10-22T10:00', $forecast['hourly'][0]['time']); // starts at the current local hour
+        $this->assertCount(3, $forecast['daily']);
+        Http::assertSentCount(1); // second call served from cache
     }
 
-    public function test_weather_provider_down_says_so_and_is_not_cached(): void
+    public function test_server_forecast_failure_is_null_and_not_cached(): void
     {
-        Http::fake(['api.open-meteo.com/*' => Http::response('oops', 500)]);
-        $this->user->settings->update(['city_name' => 'Hà Nội', 'latitude' => 21.0285, 'longitude' => 105.8542]);
+        // The real production failure: Render's shared IP hit Open-Meteo's daily per-IP quota
+        Http::fake(['api.open-meteo.com/*' => Http::sequence()
+            ->push(['error' => true, 'reason' => 'Daily API request limit exceeded. Please try again tomorrow.'], 429)
+            ->push(['unexpected' => true]) // malformed 200
+            ->push($this->forecastFixture())]);
+        $weather = app(OpenMeteo::class);
 
-        $this->actingAs($this->user)->getJson('/api/v1/weather')
-            ->assertStatus(503)
-            ->assertJsonPath('message', 'Không tải được thời tiết cho Hà Nội lúc này, thử lại sau.');
-
-        // A malformed answer (200 but not the expected shape) is handled the same way, not a 500
-        Http::fake(['api.open-meteo.com/*' => Http::response(['unexpected' => true])]);
-        $this->actingAs($this->user)->getJson('/api/v1/weather')->assertStatus(503);
-    }
-
-    public function test_city_search_proxies_the_geocoder(): void
-    {
-        Http::fake(['geocoding-api.open-meteo.com/*' => Http::response(['results' => [
-            ['name' => 'Thành phố Hồ Chí Minh', 'admin1' => 'Hồ Chí Minh', 'country' => 'Việt Nam', 'latitude' => 10.82, 'longitude' => 106.63],
-        ]])]);
-
-        $this->actingAs($this->user)->getJson('/api/v1/weather/cities?q=Ho%20Chi%20Minh')
-            ->assertOk()
-            ->assertJsonPath('data.0.name', 'Thành phố Hồ Chí Minh')
-            ->assertJsonPath('data.0.latitude', 10.82);
-        $this->actingAs($this->user)->getJson('/api/v1/weather/cities?q=a')->assertJsonValidationErrors('q');
+        $this->assertNull($weather->forecast(21.0285, 105.8542, 'Asia/Ho_Chi_Minh'));
+        $this->assertNull($weather->forecast(21.0285, 105.8542, 'Asia/Ho_Chi_Minh'));
+        $this->assertNotNull($weather->forecast(21.0285, 105.8542, 'Asia/Ho_Chi_Minh')); // failures weren't cached
     }
 
     /**

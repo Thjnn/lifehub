@@ -543,7 +543,7 @@ Trong lúc chưa có, Dashboard (Phase 8) hiển thị việc sắp đến hạn
 - Hiển thị rõ: gợi ý chỉ để tham khảo, không thay tư vấn dinh dưỡng/y tế.
 
 ### 15.5. Thời tiết & địa điểm (thuộc Phase 8)
-- Thời tiết: Open-Meteo (miễn phí, không cần key; chỉ dùng phi thương mại). Vị trí = thành phố người dùng chọn trong Settings (không xin quyền định vị; header `Permissions-Policy` vẫn chặn geolocation). Gọi từ backend, cache theo giờ.
+- Thời tiết: Open-Meteo (miễn phí, không cần key; chỉ dùng phi thương mại). Vị trí = thành phố người dùng chọn trong Settings (không xin quyền định vị; header `Permissions-Policy` vẫn chặn geolocation). Gọi **từ trình duyệt** (Open-Meteo cho phép CORS), cache 30 phút: Open-Meteo giới hạn theo IP mỗi ngày, gọi từ server Render (IP dùng chung) bị 429 "Daily API request limit exceeded". Backend chỉ lấy thời tiết cho AI Coach, best-effort.
 - AI briefing dùng thời tiết (ví dụ: mưa giờ có sự kiện tập ngoài trời).
 - Sự kiện có trường `location` (text) + nút "Mở bản đồ" mở Google Maps/Apple Maps bằng URL — không dùng Maps API (Google Maps API yêu cầu thẻ thanh toán).
 - Bản đồ trong app (OpenStreetMap) để v2 khi có nhu cầu rõ.

@@ -6,7 +6,8 @@ import { FormError, SelectField } from '@/components/shared/form-fields'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { meQuery } from '@/features/auth/api'
-import { searchCities, useUpdateSettings, type CityResult } from '@/features/dashboard/api'
+import { useUpdateSettings } from '@/features/dashboard/api'
+import { searchCities, type CityResult } from '@/features/dashboard/open-meteo'
 import { useOnlineStatus } from '@/hooks/use-online-status'
 
 // Common zones first; the current one is always selectable even if not listed.

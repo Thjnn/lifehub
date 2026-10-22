@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { BriefingCard } from '@/features/ai/BriefingCard'
 import { meQuery } from '@/features/auth/api'
-import { dashboardQuery, weatherQuery, type Dashboard, type Weather } from '@/features/dashboard/api'
+import { dashboardQuery, weatherQuery, type Dashboard } from '@/features/dashboard/api'
+import type { Weather } from '@/features/dashboard/open-meteo'
 import { weatherLabel } from '@/features/dashboard/weather'
 import { WeatherIcon } from '@/features/dashboard/WeatherIcon'
 import { dueItemTitle } from '@/features/finance/debts'
@@ -43,7 +44,7 @@ export function DashboardPage() {
   const online = useOnlineStatus()
   const me = useQuery(meQuery)
   const dashboard = useQuery(dashboardQuery)
-  const weather = useQuery(weatherQuery)
+  const weather = useQuery(weatherQuery(me.data?.settings.city, me.data?.settings.timezone ?? 'Asia/Ho_Chi_Minh'))
   const [header] = useState(headerText)
 
   return (
@@ -63,7 +64,13 @@ export function DashboardPage() {
             <QuickAction to="/app/finance/transactions?new=1" icon={Wallet} label="Giao dịch" />
           </div>
         </section>
-        <WeatherCard weather={weather.data} pending={weather.isPending} error={weather.error?.message} onRetry={() => weather.refetch()} />
+        <WeatherCard
+          weather={weather.data}
+          // pending stays true while the query is disabled (no city), so only show the skeleton while actually loading
+          pending={weather.isLoading || me.isPending}
+          error={weather.error?.message}
+          onRetry={() => weather.refetch()}
+        />
       </div>
 
       {online && <BriefingCard />}

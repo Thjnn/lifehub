@@ -24,7 +24,8 @@ const page = (data: unknown[]) => ({ data, meta: { current_page: 1, last_page: 1
 const responses: [RegExp, unknown][] = [
   [/\/me$/, { data: { id: 1, name: 'Nguyễn Minh', email: 'm@x.vn', settings: { timezone: 'Asia/Ho_Chi_Minh', locale: 'vi', currency: 'VND', theme: 'dark', preferences: {}, city: { name: 'Hà Nội', latitude: 21, longitude: 105 } } } }],
   [/\/dashboard$/, { data: { today: day, tasks: { due_today_total: 1, due_today_done: 0, overdue_count: 0, overdue: [], upcoming: [task] }, events_today: [occurrence], finance: { month, income: '0.00', expense: '45000.00', budget: { amount: '3000000.00', remaining: '2955000.00' } }, debts_due: [] } }],
-  [/\/weather$/, { data: { city: 'Hà Nội', current: { temperature: 27, feels_like: 30, weather_code: 2, precipitation: 0 }, hourly: [{ time: `${day}T15:00`, temperature: 27, precipitation_probability: 70, weather_code: 61 }], daily: [{ date: day, weather_code: 61, max: 31, min: 24, precipitation_probability: 70 }] } }],
+  // Open-Meteo is called from the browser (raw Open-Meteo shape)
+  [/api\.open-meteo\.com\/v1\/forecast/, { current: { temperature_2m: 27, apparent_temperature: 30, weather_code: 2, precipitation: 0 }, hourly: { time: [`${day}T15:00`], temperature_2m: [27], precipitation_probability: [70], weather_code: [61] }, daily: { time: [day], weather_code: [61], temperature_2m_max: [31], temperature_2m_min: [24], precipitation_probability_max: [70] } }],
   [/\/ai\/briefing$/, { data: { date: day, content: '- **Ôn thi** trước\n- Mang áo mưa', generated_at: iso(now) } }],
   [/\/ai\/conversations\/latest$/, { data: { conversation_id: 1, messages: [{ id: 1, role: 'user', content: 'Hi' }, { id: 2, role: 'assistant', content: 'Chào!' }], proposals: [] } }],
   [/\/tasks\?/, page([task])],
