@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest'
 import type { Account } from '@/features/finance/api'
-import { outstanding, settleDefaults } from '@/features/finance/debts'
+import { creditLine, outstanding, settleDefaults } from '@/features/finance/debts'
 
 const account = (over: Partial<Account>): Account => ({
   id: 1,
@@ -13,6 +13,7 @@ const account = (over: Partial<Account>): Account => ({
   due_date: null,
   due_day: null,
   installment_amount: null,
+  credit_limit: null,
   ...over,
 })
 
@@ -46,4 +47,17 @@ it('collecting a receivable transfers out of the debt', () => {
     account_id: 7,
     to_account_id: 1,
   })
+})
+
+it('computes the credit line like SPayLater shows it', () => {
+  // Limit 6,000,000, owing 4,400,000 → 1,600,000 available, 73% used
+  expect(creditLine(account({ account_type: 'liability', balance: '-4400000.00', credit_limit: '6000000.00' }))).toEqual({
+    limit: '6000000.00',
+    available: '1600000.00',
+    usedPercent: 73,
+  })
+  // Over the limit: available goes negative
+  expect(creditLine(account({ account_type: 'liability', balance: '-6500000.00', credit_limit: '6000000.00' }))?.available).toBe('-500000.00')
+  expect(creditLine(account({ account_type: 'liability', balance: '-100.00' }))).toBeNull() // no limit set
+  expect(creditLine(account({ account_type: 'bank', credit_limit: '1.00' }))).toBeNull()
 })

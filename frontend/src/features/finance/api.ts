@@ -19,6 +19,7 @@ export type Account = {
   due_date: string | null
   due_day: number | null
   installment_amount: string | null
+  credit_limit: string | null // liability only (SPayLater, credit card)
 }
 
 export type Category = {
@@ -109,7 +110,10 @@ export function useDeleteTransaction() {
   })
 }
 
-export type AccountInput = Pick<Account, 'name' | 'account_type' | 'opening_balance' | 'due_date' | 'due_day' | 'installment_amount'> & {
+export type AccountInput = Pick<
+  Account,
+  'name' | 'account_type' | 'opening_balance' | 'due_date' | 'due_day' | 'installment_amount' | 'credit_limit'
+> & {
   is_active?: boolean
 }
 

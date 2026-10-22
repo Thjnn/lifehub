@@ -27,6 +27,7 @@ class AccountResource extends JsonResource
             'due_date' => $this->due_date?->toDateString(),
             'due_day' => $this->due_day,
             'installment_amount' => $this->installment_amount === null ? null : Money::format($this->installment_amount),
+            'credit_limit' => $this->credit_limit === null ? null : Money::format($this->credit_limit),
         ];
     }
 }

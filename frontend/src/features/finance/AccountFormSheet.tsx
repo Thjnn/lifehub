@@ -26,6 +26,7 @@ const schema = z
     due_date: z.string(),
     due_day: z.string(),
     installment: digits,
+    credit_limit: digits,
   })
   .refine((v) => v.schedule !== 'once' || v.due_date !== '', { path: ['due_date'], message: 'Chọn ngày phải trả' })
 
@@ -82,6 +83,7 @@ function AccountForm({ account, onDone }: { account?: Account; onDone: () => voi
       due_date: account?.due_date ?? '',
       due_day: String(account?.due_day ?? 10),
       installment: wholeVnd(account?.installment_amount),
+      credit_limit: wholeVnd(account?.credit_limit),
     },
   })
   const type = useWatch({ control, name: 'account_type' })
@@ -103,6 +105,7 @@ function AccountForm({ account, onDone }: { account?: Account; onDone: () => voi
           due_date: withSchedule && v.schedule === 'once' ? v.due_date : null,
           due_day: withSchedule && v.schedule === 'monthly' ? Number(v.due_day) : null,
           installment_amount: withSchedule && v.schedule === 'monthly' && v.installment ? v.installment : null,
+          credit_limit: v.account_type === 'liability' && v.credit_limit ? v.credit_limit : null,
         },
       })
       toast.success(account ? 'Đã lưu tài khoản' : 'Đã tạo tài khoản')
@@ -156,6 +159,15 @@ function AccountForm({ account, onDone }: { account?: Account; onDone: () => voi
           />
         )}
       />
+      {type === 'liability' && (
+        <Controller
+          control={control}
+          name="credit_limit"
+          render={({ field }) => (
+            <MoneyField label="Hạn mức (tuỳ chọn)" value={field.value} onChange={field.onChange} error={errors.credit_limit?.message} />
+          )}
+        />
+      )}
       {type === 'liability' && (
         <p className="-mt-2 text-xs text-muted-foreground">
           Mua bằng trả sau thì ghi <b>Chi</b> từ tài khoản này; trả mỗi kỳ thì ghi <b>Chuyển khoản</b> vào đây — chi tiêu chỉ tính 1 lần.

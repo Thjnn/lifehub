@@ -1,5 +1,6 @@
 import { isDebtType, type Account, type DueItem } from '@/features/finance/api'
 import type { TransactionDefaults } from '@/features/finance/TransactionFormSheet'
+import { sumMoney } from '@/lib/money'
 
 // Remaining debt as a positive decimal string ("600000.00"), or null when cleared.
 export function outstanding(account: Pick<Account, 'account_type' | 'balance'>): string | null {
@@ -29,3 +30,14 @@ export function settleDefaults(
 
 export const dueItemTitle = (item: Pick<DueItem, 'account_type' | 'account_name'>) =>
   item.account_type === 'liability' ? `Trả ${item.account_name}` : `Thu nợ: ${item.account_name}`
+
+// Credit line (liability with a limit): available = limit − owed = limit + (negative) balance. Can go below 0 if over the limit.
+export function creditLine(account: Pick<Account, 'account_type' | 'balance' | 'credit_limit'>) {
+  if (account.account_type !== 'liability' || !account.credit_limit) return null
+  const owed = account.balance.startsWith('-') ? account.balance.slice(1) : '0.00'
+  return {
+    limit: account.credit_limit,
+    available: sumMoney([account.credit_limit, account.balance.startsWith('-') ? account.balance : '0.00']),
+    usedPercent: Math.round((Number(owed) / Number(account.credit_limit)) * 100),
+  }
+}

@@ -30,6 +30,8 @@ class AccountRequest extends FormRequest
             'due_date' => ['sometimes', 'nullable', 'date_format:Y-m-d'],
             'due_day' => ['sometimes', 'nullable', 'integer', 'between:1,31'],
             'installment_amount' => ['sometimes', 'nullable', 'numeric', 'decimal:0,2', 'gt:0', 'max:9999999999999.99'],
+            // Liability only (SPayLater, credit card)
+            'credit_limit' => ['sometimes', 'nullable', 'numeric', 'decimal:0,2', 'gt:0', 'max:9999999999999.99'],
         ];
     }
 
@@ -49,6 +51,9 @@ class AccountRequest extends FormRequest
                 $validator->errors()->add('due_day', 'Chọn một: hạn một lần hoặc hằng tháng.');
             }
             $hasSchedule = $dueDate || $dueDay || $this->filled('installment_amount');
+            if ($this->filled('credit_limit') && AccountType::tryFrom((string) $type) !== AccountType::Liability) {
+                $validator->errors()->add('credit_limit', 'Hạn mức chỉ dùng cho tài khoản nợ / trả sau.');
+            }
             if ($hasSchedule && ! AccountType::tryFrom((string) $type)?->isDebt()) {
                 $validator->errors()->add('account_type', 'Lịch trả chỉ dùng cho tài khoản nợ hoặc cho vay.');
             }

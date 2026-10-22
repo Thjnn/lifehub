@@ -107,6 +107,26 @@ class DebtTest extends TestCase
         $this->assertSame(['Nợ Minh'], array_column($this->due('2026-10-01', '2026-11-30'), 'account_name'));
     }
 
+    public function test_credit_limit_bnpl_scenario(): void
+    {
+        // Limit 6,000,000; 1,600,000 available → owing 4,400,000; this period's bill 2,000,000
+        $this->debt([
+            'name' => 'SPayLater', 'account_type' => 'liability', 'opening_balance' => '-4400000',
+            'credit_limit' => '6000000', 'due_day' => 10, 'installment_amount' => '2000000',
+        ]);
+
+        $account = collect($this->actingAs($this->user)->getJson('/api/v1/accounts')->json('data'))->firstWhere('name', 'SPayLater');
+        $this->assertSame('6000000.00', $account['credit_limit']);
+        $this->assertSame('-4400000.00', $account['balance']);
+        $this->assertSame(1600000, (int) $account['credit_limit'] + (int) $account['balance']); // available
+
+        $this->assertSame('2000000.00', $this->due('2026-11-01', '2026-11-30')[0]['amount']);
+
+        // Only liabilities have a limit
+        $this->actingAs($this->user)->postJson('/api/v1/accounts', ['name' => 'Ví', 'account_type' => 'cash', 'credit_limit' => '1000'])
+            ->assertJsonValidationErrors('credit_limit');
+    }
+
     public function test_schedule_validation(): void
     {
         $this->actingAs($this->user)->postJson('/api/v1/accounts', ['name' => 'Ví', 'account_type' => 'cash', 'due_day' => 10])
