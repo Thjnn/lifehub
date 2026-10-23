@@ -16,4 +16,16 @@ class Food extends Model
     {
         return ['kcal' => 'float', 'protein_g' => 'float', 'carbs_g' => 'float', 'fat_g' => 'float'];
     }
+
+    /**
+     * Nutrition for an amount in grams (values are per serving).
+     *
+     * @return array{kcal: float, protein_g: float, carbs_g: float, fat_g: float}
+     */
+    public function scaled(float $grams): array
+    {
+        $factor = $grams / $this->serving_grams;
+
+        return array_map(fn ($v) => round($v * $factor, 1), $this->only(['kcal', 'protein_g', 'carbs_g', 'fat_g']));
+    }
 }

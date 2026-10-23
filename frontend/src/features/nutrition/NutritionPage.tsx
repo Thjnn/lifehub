@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { ChevronLeft, ChevronRight, Copy, Info, Plus, Salad, Trash2 } from 'lucide-react'
+import { Check, ChevronLeft, ChevronRight, Copy, Info, Plus, Salad, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { FormError } from '@/components/shared/form-fields'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
-import { dayQuery, goalLabels, mealLabels, profileQuery, useCopyDay, useDeleteEntry, type Meal } from '@/features/nutrition/api'
+import { dayQuery, goalLabels, mealLabels, profileQuery, useCopyDay, useDeleteEntry, useEatPlanItem, type Meal } from '@/features/nutrition/api'
 import { EntrySheet } from '@/features/nutrition/EntrySheet'
 import { ProfileSheet } from '@/features/nutrition/ProfileSheet'
 import { useOnlineStatus } from '@/hooks/use-online-status'
@@ -29,6 +29,7 @@ export function NutritionPage() {
   const day = useQuery(dayQuery(date))
   const remove = useDeleteEntry()
   const copyDay = useCopyDay()
+  const eat = useEatPlanItem()
   const copyPreviousDay = () => {
     const previous = fromDateKey(date)
     previous.setDate(previous.getDate() - 1)
@@ -98,6 +99,7 @@ export function NutritionPage() {
 
       {meals.map((meal) => {
         const entries = day.data?.data.filter((e) => e.meal === meal) ?? []
+        const planned = day.data?.meta.plan?.filter((p) => p.meal === meal && !p.food_entry_id) ?? []
         const kcal = Math.round(entries.reduce((sum, e) => sum + e.kcal, 0))
         return (
           <section key={meal} className="rounded-xl border bg-card">
@@ -113,7 +115,7 @@ export function NutritionPage() {
             {day.isPending ? (
               <Skeleton className="m-4 h-6" />
             ) : entries.length === 0 ? (
-              <p className="px-4 py-3 text-sm text-muted-foreground">Chưa ghi món nào.</p>
+              planned.length === 0 && <p className="px-4 py-3 text-sm text-muted-foreground">Chưa ghi món nào.</p>
             ) : (
               <ul className="divide-y">
                 {entries.map((e) => (
@@ -136,6 +138,33 @@ export function NutritionPage() {
                       onClick={() => remove.mutate(e.id, { onError: (err) => toast.error(err.message) })}
                     >
                       <Trash2 />
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {/* Dishes from the confirmed weekly plan: one tap logs them with the table's numbers. */}
+            {planned.length > 0 && (
+              <ul className="divide-y border-t border-dashed bg-muted/20">
+                {planned.map((p) => (
+                  <li key={p.id} className="flex items-center gap-3 px-4 py-2 text-sm">
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-muted-foreground">
+                        <span className="text-xs">Theo thực đơn · </span>
+                        {p.name}
+                      </p>
+                      <p className="text-xs text-muted-foreground tabular-nums">
+                        {p.grams} g · {Math.round(p.kcal)} kcal
+                      </p>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={!online || eat.isPending}
+                      onClick={() => eat.mutate(p.id, { onError: (err) => toast.error(err.message) })}
+                    >
+                      <Check />
+                      Đã ăn
                     </Button>
                   </li>
                 ))}

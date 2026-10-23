@@ -4,6 +4,7 @@ import { FullPageSpinner } from '@/components/shared/FullPageSpinner'
 import { NotFound } from '@/components/shared/NotFound'
 import { AiCoachPage } from '@/features/ai/AiCoachPage'
 import { NotesPage } from '@/features/notes/NotesPage'
+import { MealPlanPage } from '@/features/nutrition/MealPlanPage'
 import { NutritionPage } from '@/features/nutrition/NutritionPage'
 import { meQuery } from '@/features/auth/api'
 import { DashboardPage } from '@/features/dashboard/DashboardPage'
@@ -80,7 +81,13 @@ export const router = createBrowserRouter([
           { path: 'reports', element: <ReportsPage />, handle: { title: 'Báo cáo' } },
         ],
       },
-      { path: 'nutrition', element: <NutritionPage />, handle: { title: 'Dinh dưỡng' } },
+      {
+        path: 'nutrition',
+        children: [
+          { index: true, element: <NutritionPage />, handle: { title: 'Dinh dưỡng' } },
+          { path: 'plan', element: <MealPlanPage />, handle: { title: 'Thực đơn tuần' } },
+        ],
+      },
       { path: 'notes', element: <NotesPage />, handle: { title: 'Ghi chú' } },
       { path: 'ai-coach', element: <AiCoachPage />, handle: { title: 'AI Coach' } },
       {

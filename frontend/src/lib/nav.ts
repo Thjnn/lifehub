@@ -24,7 +24,15 @@ export const navItems: NavItem[] = [
       { to: '/app/finance/reports', label: 'Báo cáo' },
     ],
   },
-  { to: '/app/nutrition', label: 'Dinh dưỡng', icon: Salad },
+  {
+    to: '/app/nutrition',
+    label: 'Dinh dưỡng',
+    icon: Salad,
+    children: [
+      { to: '/app/nutrition', label: 'Nhật ký', end: true },
+      { to: '/app/nutrition/plan', label: 'Thực đơn tuần' },
+    ],
+  },
   { to: '/app/notes', label: 'Ghi chú', icon: NotebookPen },
   { to: '/app/ai-coach', label: 'AI Coach', icon: Sparkles },
   {

@@ -1,5 +1,6 @@
 import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/api-client'
+import { dateKey, fromDateKey } from '@/lib/format'
 
 export type Goal = 'cut' | 'maintain' | 'bulk'
 export type Meal = 'breakfast' | 'lunch' | 'dinner' | 'snack'
@@ -29,7 +30,24 @@ export type FoodEntry = Macros & {
 }
 export type EntryInput = { eaten_at: string; meal: Meal; food_id: number; grams: number } | (Macros & { eaten_at: string; meal: Meal; name: string; grams: null })
 
-type DayResponse = { data: FoodEntry[]; meta: { date: string; totals: Macros; targets: Targets | null } }
+// A dish of the confirmed weekly plan; food_entry_id is set once it was logged with "Đã ăn".
+export type PlanItem = Macros & {
+  id: number
+  date: string
+  meal: Meal
+  food_id: number
+  name: string
+  grams: number
+  est_cost: string | null
+  food_entry_id: number | null
+}
+export type ProposedItem = Omit<PlanItem, 'id' | 'food_entry_id'>
+export type MealPlanProposal = {
+  id: number
+  payload: { week_start: string; budget_vnd: string | null; total_cost_vnd: string; items: ProposedItem[] }
+}
+
+type DayResponse = { data: FoodEntry[]; meta: { date: string; totals: Macros; targets: Targets | null; plan?: PlanItem[] } }
 
 export const nutritionKeys = { all: ['nutrition'] as const }
 
@@ -50,6 +68,26 @@ export const dayQuery = (date: string) =>
     queryFn: () => api<DayResponse>(`/food-entries?date=${date}`),
   })
 
+export const mealPlanQuery = (week: string) =>
+  queryOptions({
+    queryKey: ['nutrition', 'plan', week],
+    queryFn: () => api<{ data: PlanItem[]; meta: { week_start: string; budget_vnd: string | null } }>(`/meal-plan?week=${week}`),
+  })
+
+// Monday of the week containing a YYYY-MM-DD day (weeks start on Monday, like the server).
+export const mondayOf = (key: string) => {
+  const d = fromDateKey(key)
+  d.setDate(d.getDate() - ((d.getDay() + 6) % 7))
+  return dateKey(d)
+}
+
+// AI only proposes: nothing is saved until the proposal is confirmed (spec §15.4).
+export const useGenerateMealPlan = () =>
+  useMutation({
+    mutationFn: (weekStart: string) =>
+      api<{ data: MealPlanProposal }>('/ai/meal-plan', { method: 'POST', body: { week_start: weekStart } }).then((r) => r.data),
+  })
+
 // Profile, entries and totals all depend on each other: refresh the whole feature after any write.
 function useNutritionMutation<TInput>(mutationFn: (input: TInput) => Promise<unknown>) {
   const queryClient = useQueryClient()
@@ -62,7 +100,16 @@ export const useCopyDay = () =>
   useNutritionMutation((days: { from: string; to: string }) =>
     api<{ data: { copied: number } }>('/food-entries/copy', { method: 'POST', body: days }).then((r) => r.data.copied),
   )
-export const useDeleteEntry =() => useNutritionMutation((id: number) => api(`/food-entries/${id}`, { method: 'DELETE' }))
+export const useConfirmMealPlan = () => useNutritionMutation((proposalId: number) => api(`/ai/proposals/${proposalId}/confirm`, { method: 'POST' }))
+export type PlanItemInput = { date: string; meal: Meal; food_id: number; grams: number }
+// After confirming, the plan is the user's: change a dish (id) or add one (no id).
+export const useSavePlanItem = () =>
+  useNutritionMutation(({ id, input }: { id?: number; input: PlanItemInput }) =>
+    api(id ? `/meal-plan-items/${id}` : '/meal-plan-items', { method: id ? 'PUT' : 'POST', body: input }),
+  )
+export const useEatPlanItem =() => useNutritionMutation((id: number) => api(`/meal-plan-items/${id}/eat`, { method: 'POST' }))
+export const useDeletePlanItem = () => useNutritionMutation((id: number) => api(`/meal-plan-items/${id}`, { method: 'DELETE' }))
+export const useDeleteEntry = () => useNutritionMutation((id: number) => api(`/food-entries/${id}`, { method: 'DELETE' }))
 
 /** Same scaling the server applies, for the live preview while picking grams. */
 export const scaleFood = (food: Food, grams: number): Macros => {

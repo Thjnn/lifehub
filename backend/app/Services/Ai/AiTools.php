@@ -14,6 +14,7 @@ use App\Models\User;
 use App\Services\Finance\DebtSchedule;
 use App\Services\Finance\FinanceReport;
 use App\Services\Finance\MonthRange;
+use App\Services\Nutrition\NutritionTargets;
 use App\Services\Planning\EventOccurrences;
 use App\Services\Weather\OpenMeteo;
 use App\Support\Money;
@@ -71,6 +72,9 @@ class AiTools
             ['name' => 'get_debts', 'description' => 'Debt / buy-now-pay-later repayments due in the next N days (and overdue ones).', 'parameters' => ['type' => 'object', 'properties' => [
                 'days' => ['type' => 'integer', 'description' => '1 to 60'],
             ], 'required' => ['days']]],
+            ['name' => 'get_nutrition', 'description' => 'Daily calorie/protein targets, what the user ate each day, and their confirmed meal plan (which planned dishes were eaten). Max 14 days.', 'parameters' => ['type' => 'object', 'properties' => [
+                'date_from' => $date, 'date_to' => $date,
+            ], 'required' => ['date_from', 'date_to']]],
             ['name' => 'get_weather', 'description' => 'Weather now, next hours and 3 days for the user\'s city.'], // no parameters
             ['name' => 'propose_task', 'description' => 'Suggest creating a task. The user must confirm; nothing is saved until then.', 'parameters' => ['type' => 'object', 'properties' => [
                 'title' => ['type' => 'string'], 'due_at' => $dateTime, 'priority' => ['type' => 'string', 'enum' => ['low', 'medium', 'high', 'urgent']], 'description' => ['type' => 'string'],
@@ -96,6 +100,7 @@ class AiTools
                 'get_spending' => $this->spending($this->date($args['date_from'] ?? null), $this->date($args['date_to'] ?? null), $args['category'] ?? null),
                 'get_budgets' => $this->budgets((string) ($args['month'] ?? now($this->timezone)->format('Y-m'))),
                 'get_debts' => $this->debtsDue(max(1, min(60, (int) ($args['days'] ?? 14)))),
+                'get_nutrition' => $this->nutrition($this->date($args['date_from'] ?? null), $this->date($args['date_to'] ?? null)),
                 'get_weather' => $this->weatherNow(),
                 'propose_task' => $this->proposeTask($args),
                 'propose_event' => $this->proposeEvent($args),
@@ -284,6 +289,39 @@ class AiTools
                 'outstanding_vnd' => $d['outstanding'],
                 'overdue' => $d['overdue'],
             ])->values()->all()];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function nutrition(Carbon $from, Carbon $to): array
+    {
+        $to = $to->min($from->copy()->addDays(13));
+        $profile = $this->user->nutritionProfile;
+        $eaten = $this->user->foodEntries()->whereBetween('eaten_at', [$from->copy()->utc(), $to->copy()->endOfDay()->utc()])->get()
+            ->groupBy(fn ($e) => $e->eaten_at->copy()->setTimezone($this->timezone)->toDateString());
+        $planned = $this->user->mealPlanItems()->with('food')
+            ->whereDate('date', '>=', $from->toDateString())->whereDate('date', '<=', $to->toDateString())->get()
+            ->groupBy(fn ($i) => $i->date->toDateString());
+
+        $days = [];
+        for ($day = $from->copy(); $day->lte($to); $day->addDay()) {
+            $key = $day->toDateString();
+            $entries = $eaten[$key] ?? collect();
+            $days[] = [
+                'date' => $key,
+                'eaten_kcal' => (int) round($entries->sum('kcal')),
+                'eaten_protein_g' => round($entries->sum('protein_g'), 1),
+                'planned' => ($planned[$key] ?? collect())->map(fn ($i) => [
+                    'meal' => $i->meal->value, 'dish' => $i->food->name, 'grams' => $i->grams, 'eaten' => $i->food_entry_id !== null,
+                ])->values()->all(),
+            ];
+        }
+
+        return [
+            'targets' => $profile ? NutritionTargets::for($profile, now()->year) : 'No nutrition profile yet (the user can set one in Dinh dưỡng).',
+            'days' => $days,
+        ];
     }
 
     /**

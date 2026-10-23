@@ -624,6 +624,84 @@
                 }
             }
         },
+        "/v1/ai/meal-plan": {
+            "post": {
+                "operationId": "ai.mealPlan",
+                "tags": [
+                    "Ai"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "week_start": {
+                                        "type": "string",
+                                        "format": "date"
+                                    }
+                                },
+                                "required": [
+                                    "week_start"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer"
+                                                },
+                                                "action_type": {
+                                                    "type": "string"
+                                                },
+                                                "payload": {
+                                                    "type": "array",
+                                                    "items": {}
+                                                },
+                                                "status": {
+                                                    "type": "string"
+                                                },
+                                                "expires_at": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "required": [
+                                                "id",
+                                                "action_type",
+                                                "payload",
+                                                "status",
+                                                "expires_at"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
         "/v1/ai/proposals/{proposal}/confirm": {
             "post": {
                 "operationId": "ai.confirm",
@@ -712,6 +790,23 @@
                                                             "required": [
                                                                 "type",
                                                                 "id"
+                                                            ]
+                                                        },
+                                                        {
+                                                            "type": "object",
+                                                            "properties": {
+                                                                "type": {
+                                                                    "type": "string",
+                                                                    "const": "meal_plan"
+                                                                },
+                                                                "count": {
+                                                                    "type": "integer",
+                                                                    "minimum": 0
+                                                                }
+                                                            },
+                                                            "required": [
+                                                                "type",
+                                                                "count"
                                                             ]
                                                         },
                                                         {
@@ -2045,6 +2140,309 @@
                 }
             }
         },
+        "/v1/meal-plan": {
+            "get": {
+                "operationId": "mealPlan.index",
+                "tags": [
+                    "MealPlan"
+                ],
+                "parameters": [
+                    {
+                        "name": "week",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/MealPlanItemResource"
+                                            }
+                                        },
+                                        "meta": {
+                                            "type": "object",
+                                            "properties": {
+                                                "week_start": {
+                                                    "type": "string"
+                                                },
+                                                "budget_vnd": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                }
+                                            },
+                                            "required": [
+                                                "week_start",
+                                                "budget_vnd"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "data",
+                                        "meta"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/v1/meal-plan-items": {
+            "post": {
+                "operationId": "mealPlan.store",
+                "tags": [
+                    "MealPlan"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/MealPlanItemRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "`MealPlanItemResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/MealPlanItemResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/v1/meal-plan-items/{item}": {
+            "put": {
+                "operationId": "mealPlan.update",
+                "tags": [
+                    "MealPlan"
+                ],
+                "parameters": [
+                    {
+                        "name": "item",
+                        "in": "path",
+                        "required": true,
+                        "description": "The item ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/MealPlanItemRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "`MealPlanItemResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/MealPlanItemResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "examples": [
+                                                "M\u00f3n n\u00e0y \u0111\u00e3 \u0103n \u2014 s\u1eeda trong nh\u1eadt k\u00fd."
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "mealPlan.destroy",
+                "tags": [
+                    "MealPlan"
+                ],
+                "parameters": [
+                    {
+                        "name": "item",
+                        "in": "path",
+                        "required": true,
+                        "description": "The item ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No content"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/v1/meal-plan-items/{item}/eat": {
+            "post": {
+                "operationId": "mealPlan.eat",
+                "tags": [
+                    "MealPlan"
+                ],
+                "parameters": [
+                    {
+                        "name": "item",
+                        "in": "path",
+                        "required": true,
+                        "description": "The item ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "properties": {
+                                                "food_entry_id": {
+                                                    "type": "integer"
+                                                }
+                                            },
+                                            "required": [
+                                                "food_entry_id"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "examples": [
+                                                "M\u00f3n n\u00e0y \u0111\u00e3 \u0111\u01b0\u1ee3c ghi v\u00e0o nh\u1eadt k\u00fd."
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
         "/v1/notes": {
             "get": {
                 "operationId": "note.index",
@@ -2613,12 +3011,20 @@
                                                         "string",
                                                         "null"
                                                     ]
+                                                },
+                                                "plan": {
+                                                    "type": "array",
+                                                    "description": "The day's planned dishes, for the \"\u0110\u00e3 \u0103n\" buttons.",
+                                                    "items": {
+                                                        "$ref": "#/components/schemas/MealPlanItemResource"
+                                                    }
                                                 }
                                             },
                                             "required": [
                                                 "date",
                                                 "totals",
-                                                "targets"
+                                                "targets",
+                                                "plan"
                                             ]
                                         }
                                     },
@@ -4318,6 +4724,96 @@
                     "snack"
                 ],
                 "title": "Meal"
+            },
+            "MealPlanItemRequest": {
+                "type": "object",
+                "description": "A dish the user adds to / changes in their plan. Only dishes from the table, so \"\u0110\u00e3 \u0103n\" can use the table's numbers.",
+                "properties": {
+                    "date": {
+                        "type": "string",
+                        "format": "date"
+                    },
+                    "meal": {
+                        "$ref": "#/components/schemas/Meal"
+                    },
+                    "food_id": {
+                        "type": "integer"
+                    },
+                    "grams": {
+                        "type": "integer",
+                        "minimum": 10,
+                        "maximum": 1500
+                    }
+                },
+                "required": [
+                    "date",
+                    "meal",
+                    "food_id",
+                    "grams"
+                ],
+                "title": "MealPlanItemRequest"
+            },
+            "MealPlanItemResource": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "date": {
+                        "type": "string"
+                    },
+                    "meal": {
+                        "$ref": "#/components/schemas/Meal"
+                    },
+                    "food_id": {
+                        "type": "integer"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "grams": {
+                        "type": "integer"
+                    },
+                    "kcal": {
+                        "type": "number"
+                    },
+                    "protein_g": {
+                        "type": "number"
+                    },
+                    "carbs_g": {
+                        "type": "number"
+                    },
+                    "fat_g": {
+                        "type": "number"
+                    },
+                    "est_cost": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "food_entry_id": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
+                    }
+                },
+                "required": [
+                    "id",
+                    "date",
+                    "meal",
+                    "food_id",
+                    "name",
+                    "grams",
+                    "kcal",
+                    "protein_g",
+                    "carbs_g",
+                    "fat_g",
+                    "est_cost",
+                    "food_entry_id"
+                ],
+                "title": "MealPlanItemResource"
             },
             "NoteResource": {
                 "type": "object",

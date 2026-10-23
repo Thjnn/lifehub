@@ -1,13 +1,11 @@
 import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { FormError, TextField } from '@/components/shared/form-fields'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
-import { foodsQuery, mealLabels, scaleFood, useAddEntry, type Food, type Meal } from '@/features/nutrition/api'
+import { mealLabels, useAddEntry, type Food, type Meal } from '@/features/nutrition/api'
+import { FoodPicker } from '@/features/nutrition/FoodPicker'
 import { useIsDesktop } from '@/hooks/use-media-query'
-import { searchMatch } from '@/lib/search'
 import { cn } from '@/lib/utils'
 
 type Props = { open: boolean; onOpenChange: (open: boolean) => void; meal: Meal; eatenAt: () => string }
@@ -27,13 +25,9 @@ export function EntrySheet({ open, onOpenChange, meal, eatenAt }: Props) {
   )
 }
 
-const portions = [0.5, 1, 1.5, 2]
-
 function EntryForm({ meal, eatenAt, onDone }: { meal: Meal; eatenAt: () => string; onDone: () => void }) {
-  const foods = useQuery(foodsQuery)
   const add = useAddEntry()
   const [mode, setMode] = useState<'table' | 'manual'>('table')
-  const [search, setSearch] = useState('')
   const [food, setFood] = useState<Food>()
   const [grams, setGrams] = useState(0)
   const [manual, setManual] = useState({ name: '', kcal: '', protein_g: '', carbs_g: '', fat_g: '' })
@@ -55,7 +49,6 @@ function EntryForm({ meal, eatenAt, onDone }: { meal: Meal; eatenAt: () => strin
     }
   }
 
-  const preview = food && grams > 0 ? scaleFood(food, grams) : undefined
   const manualValid = manual.name.trim() !== '' && ['kcal', 'protein_g', 'carbs_g', 'fat_g'].every((k) => manual[k as keyof typeof manual] !== '' && Number(manual[k as keyof typeof manual]) >= 0)
 
   return (
@@ -76,62 +69,18 @@ function EntryForm({ meal, eatenAt, onDone }: { meal: Meal; eatenAt: () => strin
       </div>
 
       {mode === 'table' ? (
-        food ? (
-          <div className="flex flex-col gap-3">
-            <div className="flex items-center justify-between gap-2">
-              <div>
-                <p className="font-medium">{food.name}</p>
-                <p className="text-xs text-muted-foreground">
-                  {food.serving} ≈ {food.serving_grams} g · {food.kcal} kcal
-                </p>
-              </div>
-              <Button size="sm" variant="ghost" onClick={() => setFood(undefined)}>
-                Đổi món
-              </Button>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {portions.map((p) => (
-                <Button key={p} size="sm" variant={grams === food.serving_grams * p ? 'default' : 'outline'} onClick={() => setGrams(food.serving_grams * p)}>
-                  {p} phần
-                </Button>
-              ))}
-            </div>
-            <TextField label="Khối lượng (g)" type="number" inputMode="decimal" value={grams || ''} onChange={(e) => setGrams(Number(e.target.value))} />
-            {preview && (
-              <p className="rounded-lg bg-muted/50 px-3 py-2 text-sm tabular-nums">
-                {preview.kcal} kcal · đạm {preview.protein_g} g · tinh bột {preview.carbs_g} g · béo {preview.fat_g} g
-              </p>
-            )}
-          </div>
-        ) : (
-          <div className="flex flex-col gap-2">
-            <Input type="search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Tìm món: pho, com tam…" aria-label="Tìm món" autoFocus />
-            {foods.isPending && <p className="text-sm text-muted-foreground">Đang tải danh sách món…</p>}
-            {foods.isError && <FormError message={foods.error.message} />}
-            <ul className="flex max-h-72 flex-col divide-y overflow-y-auto rounded-lg border">
-              {foods.data
-                ?.filter((f) => searchMatch(f.name, search))
-                .map((f) => (
-                  <li key={f.id}>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setFood(f)
-                        setGrams(f.serving_grams)
-                      }}
-                      className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm hover:bg-accent/40"
-                    >
-                      <span>{f.name}</span>
-                      <span className="text-xs whitespace-nowrap text-muted-foreground tabular-nums">
-                        {f.serving} · {f.kcal} kcal
-                      </span>
-                    </button>
-                  </li>
-                ))}
-            </ul>
-            <p className="text-xs text-muted-foreground">Không có món bạn ăn? Chuyển sang "Tự nhập".</p>
-          </div>
-        )
+        <>
+          <FoodPicker
+            food={food}
+            grams={grams}
+            onPick={(f) => {
+              setFood(f)
+              setGrams(f?.serving_grams ?? 0)
+            }}
+            onGrams={setGrams}
+          />
+          {!food && <p className="text-xs text-muted-foreground">Không có món bạn ăn? Chuyển sang "Tự nhập".</p>}
+        </>
       ) : (
         <div className="grid grid-cols-2 gap-3">
           <div className="col-span-2">

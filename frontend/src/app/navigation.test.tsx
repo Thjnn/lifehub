@@ -19,6 +19,7 @@ const occurrence = {
 const account = { id: 1, name: 'Tiền mặt', account_type: 'cash', currency: 'VND', opening_balance: '0.00', balance: '100000.00', is_active: true, due_date: null, due_day: null, installment_amount: null, credit_limit: null }
 const spaylater = { ...account, id: 2, name: 'SPayLater', account_type: 'liability', balance: '-4400000.00', due_day: 10, installment_amount: '2000000.00', credit_limit: '6000000.00' }
 const category = { id: 1, name: 'Ăn uống', type: 'expense', icon: 'utensils', color: '#F87171', is_system: true }
+const planItem = { id: 1, date: day, meal: 'dinner', food_id: 1, name: 'Cơm gà', grams: 400, kcal: 600, protein_g: 30, carbs_g: 75, fat_g: 18, est_cost: '40000.00', food_entry_id: null }
 const page = (data: unknown[]) => ({ data, meta: { current_page: 1, last_page: 1, total: data.length } })
 
 const responses: [RegExp, unknown][] = [
@@ -36,7 +37,8 @@ const responses: [RegExp, unknown][] = [
   [/\/transactions\?/, page([{ id: '22222222-2222-4222-8222-222222222222', type: 'expense', account_id: 1, to_account_id: null, category_id: 1, amount: '45000.00', currency: 'VND', occurred_at: iso(now), description: null, created_at: iso(now), updated_at: iso(now) }])],
   [/\/budgets\?/, { data: [{ id: 1, category_id: null, period_start: `${month}-01`, period_end: `${month}-28`, amount: '3000000.00', spent: '45000.00', remaining: '2955000.00', percent: 2 }] }],
   [/\/nutrition\/profile$/, { data: { goal: 'cut', sex: 'male', birth_year: 2001, weight_kg: 70, height_cm: 175, workouts_per_week: 4, targets: { bmr: 1674, tdee: 2594, kcal: 2210, protein_g: 140 } } }],
-  [/\/food-entries\?/, { data: [{ id: 1, eaten_at: iso(now), meal: 'lunch', food_id: 1, name: 'Phở bò', grams: 500, kcal: 450, protein_g: 25, carbs_g: 55, fat_g: 12, source: 'table' }], meta: { date: day, totals: { kcal: 450, protein_g: 25, carbs_g: 55, fat_g: 12 }, targets: null } }],
+  [/\/food-entries\?/, { data: [{ id: 1, eaten_at: iso(now), meal: 'lunch', food_id: 1, name: 'Phở bò', grams: 500, kcal: 450, protein_g: 25, carbs_g: 55, fat_g: 12, source: 'table' }], meta: { date: day, totals: { kcal: 450, protein_g: 25, carbs_g: 55, fat_g: 12 }, targets: null, plan: [planItem] } }],
+  [/\/meal-plan\?/, { data: [planItem, { ...planItem, id: 2, meal: 'breakfast', food_entry_id: 1 }], meta: { week_start: day, budget_vnd: '700000.00' } }],
   [/\/notes\?/, page([{ id: '33333333-3333-4333-8333-333333333333', title: 'Ý tưởng', body: 'Ghi chú\nhai dòng', pinned: true, task_id: null, event_id: null, created_at: iso(now), updated_at: iso(now) }])],
   [/\/reports\/finance\?/, { data: { month, income: '0.00', expense: '45000.00', net: '-45000.00', previous: { income: '0.00', expense: '0.00' }, by_category: [{ category_id: 1, amount: '45000.00' }] } }],
 ]
@@ -61,7 +63,7 @@ afterAll(() => vi.unstubAllGlobals())
 
 const pages = [
   '/app/dashboard', '/app/tasks', '/app/calendar', '/app/finance', '/app/finance/transactions', '/app/finance/accounts',
-  '/app/finance/budgets', '/app/finance/reports', '/app/nutrition', '/app/notes', '/app/ai-coach', '/app/settings/profile', '/app/settings/preferences', '/app/settings/privacy', '/app/dashboard',
+  '/app/finance/budgets', '/app/finance/reports', '/app/nutrition', '/app/nutrition/plan','/app/notes', '/app/ai-coach', '/app/settings/profile', '/app/settings/preferences', '/app/settings/privacy', '/app/dashboard',
 ]
 
 it('every page renders, runs its effects and unmounts without hitting the error boundary', async () => {

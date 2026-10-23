@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\V1\DashboardController;
 use App\Http\Controllers\Api\V1\DebtController;
 use App\Http\Controllers\Api\V1\EventController;
 use App\Http\Controllers\Api\V1\FinanceReportController;
+use App\Http\Controllers\Api\V1\MealPlanController;
 use App\Http\Controllers\Api\V1\NoteController;
 use App\Http\Controllers\Api\V1\NutritionController;
 use App\Http\Controllers\Api\V1\PrivacyController;
@@ -57,6 +58,7 @@ Route::prefix('v1')->group(function () {
         Route::post('/ai/briefing/refresh', [AiController::class, 'refreshBriefing']);
         Route::post('/ai/chat', [AiController::class, 'chat']);
         Route::get('/ai/conversations/latest', [AiController::class, 'latest']);
+        Route::post('/ai/meal-plan', [AiController::class, 'mealPlan']);
         Route::post('/ai/proposals/{proposal}/confirm', [AiController::class, 'confirm'])->whereNumber('proposal');
         Route::post('/ai/proposals/{proposal}/reject', [AiController::class, 'reject'])->whereNumber('proposal');
 
@@ -73,6 +75,11 @@ Route::prefix('v1')->group(function () {
         Route::post('/food-entries', [NutritionController::class, 'storeEntry']);
         Route::post('/food-entries/copy', [NutritionController::class, 'copyDay']);
         Route::delete('/food-entries/{entry}', [NutritionController::class, 'destroyEntry'])->whereNumber('entry');
+        Route::get('/meal-plan', [MealPlanController::class, 'index']);
+        Route::post('/meal-plan-items', [MealPlanController::class, 'store']);
+        Route::put('/meal-plan-items/{item}', [MealPlanController::class, 'update'])->whereNumber('item');
+        Route::post('/meal-plan-items/{item}/eat', [MealPlanController::class, 'eat'])->whereNumber('item');
+        Route::delete('/meal-plan-items/{item}', [MealPlanController::class, 'destroy'])->whereNumber('item');
 
         Route::get('/notes', [NoteController::class, 'index']);
         Route::put('/notes/{id}', [NoteController::class, 'upsert'])->whereUuid('id');

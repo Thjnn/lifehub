@@ -8,8 +8,10 @@ use App\Http\Controllers\Controller;
 use App\Models\AiActionProposal;
 use App\Models\AiConversation;
 use App\Services\Ai\Coach;
+use App\Services\Nutrition\MealPlanner;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
@@ -23,7 +25,18 @@ class AiController extends Controller
 
     private const REFRESH_PER_DAY = 3;
 
-    public function __construct(private Coach $coach) {}
+    private const MEAL_PLAN_PER_DAY = 3;
+
+    public function __construct(private Coach $coach, private MealPlanner $planner) {}
+
+    // POST /ai/meal-plan {week_start} — a week of meals as a proposal; nothing is saved until confirmed
+    public function mealPlan(Request $request): JsonResponse
+    {
+        $week = $request->validate(['week_start' => ['required', 'date_format:Y-m-d']])['week_start'];
+        $this->limit("ai-meal-plan:{$request->user()->id}", self::MEAL_PLAN_PER_DAY, 'Bạn đã tạo thực đơn '.self::MEAL_PLAN_PER_DAY.' lần trong 24 giờ. Hẹn bạn ngày mai nhé!');
+
+        return response()->json(['data' => $this->presentProposal($this->planner->propose($request->user(), Carbon::parse($week)->startOfWeek(Carbon::MONDAY)))]);
+    }
 
     // GET /ai/briefing — today's briefing, generated on the first request of the day
     public function briefing(Request $request): JsonResponse
@@ -108,6 +121,7 @@ class AiController extends Controller
                     'location' => $p['location'] ?? null,
                     'status' => EventStatus::Scheduled,
                 ])->id],
+                'create_meal_plan' => $this->planner->apply($request->user(), $p),
                 default => abort(422, 'Loại đề xuất không hỗ trợ.'),
             };
             $proposal->update(['status' => 'confirmed', 'confirmed_at' => now()]);

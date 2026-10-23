@@ -19,11 +19,12 @@ class Gemini
     /**
      * @param  list<array<string, mixed>>  $contents  Gemini "contents" (role user|model, parts)
      * @param  list<array<string, mixed>>  $functions  function declarations
+     * @param  array<string, mixed>|null  $schema  structured output: the reply is JSON matching this schema
      * @return array{parts: list<array<string, mixed>>, usage: array<string, mixed>|null, model: string}
      *
      * @throws AiUnavailable
      */
-    public function generate(string $system, array $contents, array $functions = []): array
+    public function generate(string $system, array $contents, array $functions = [], ?array $schema = null): array
     {
         $key = config('services.gemini.key');
         $model = config('services.gemini.model');
@@ -40,6 +41,10 @@ class Gemini
         ];
         if ($functions) {
             $body['tools'] = [['functionDeclarations' => $functions]];
+        }
+        if ($schema) {
+            // A week of meals is a long JSON reply: give it room.
+            $body['generationConfig'] = ['maxOutputTokens' => 8192, 'responseMimeType' => 'application/json', 'responseSchema' => $schema];
         }
 
         // Free-tier realities: a model can be overloaded (500/503 → retry it once after a pause) or out of quota

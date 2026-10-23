@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Enums\NutritionGoal;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Nutrition\FoodEntryRequest;
+use App\Http\Resources\MealPlanItemResource;
 use App\Models\Food;
 use App\Models\FoodEntry;
 use App\Models\NutritionProfile;
@@ -67,6 +68,8 @@ class NutritionController extends Controller
                 'date' => $date,
                 'totals' => ['kcal' => $total('kcal'), 'protein_g' => $total('protein_g'), 'carbs_g' => $total('carbs_g'), 'fat_g' => $total('fat_g')],
                 'targets' => $this->profileData($user->nutritionProfile)['targets'] ?? null,
+                // The day's planned dishes, for the "Đã ăn" buttons.
+                'plan' => MealPlanItemResource::collection($user->mealPlanItems()->with('food')->whereDate('date', $date)->orderBy('id')->get()),
             ],
         ]);
     }
@@ -141,10 +144,7 @@ class NutritionController extends Controller
         $base = ['eaten_at' => $data['eaten_at'], 'meal' => $data['meal'], 'grams' => $data['grams'] ?? null];
 
         if ($food = Food::find($data['food_id'] ?? null)) {
-            $factor = $data['grams'] / $food->serving_grams;
-
-            return $base + ['food_id' => $food->id, 'name' => $food->name, 'source' => 'table']
-                + array_map(fn ($v) => round($v * $factor, 1), $food->only(['kcal', 'protein_g', 'carbs_g', 'fat_g']));
+            return $base + ['food_id' => $food->id, 'name' => $food->name, 'source' => 'table'] + $food->scaled($data['grams']);
         }
 
         return $base + ['food_id' => null, 'source' => 'manual'] + array_intersect_key($data, array_flip(['name', 'kcal', 'protein_g', 'carbs_g', 'fat_g']));
