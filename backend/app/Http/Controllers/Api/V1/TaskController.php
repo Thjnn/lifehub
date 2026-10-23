@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Tasks\ListTasksRequest;
 use App\Http\Requests\Tasks\UpsertTaskRequest;
 use App\Http\Resources\TaskResource;
+use App\Models\Note;
 use App\Models\Task;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -88,6 +89,9 @@ class TaskController extends Controller
         Gate::authorize('delete', $task);
 
         $task->delete();
+        // Soft delete skips the FK's nullOnDelete: unlink notes here, or editing them would fail validation.
+        // toBase() keeps updated_at, so pending offline note edits don't hit a false last-write-wins conflict.
+        Note::where('task_id', $task->id)->toBase()->update(['task_id' => null]);
 
         return response()->noContent();
     }

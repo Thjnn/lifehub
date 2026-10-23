@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link2, NotebookPen, Pin, Plus, RotateCw, Search, WifiOff } from 'lucide-react'
 import { useSearchParams } from 'react-router'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -111,7 +112,7 @@ function NoteCard({ note, sync, onOpen }: { note: Note; sync?: 'pending' | 'fail
       id: note.id,
       created: false,
       input: { title: note.title, body: note.body, pinned: !note.pinned, task_id: note.task_id, event_id: note.event_id },
-    })
+    }, { onError: (error) => toast.error(error.message || 'Không ghim được') })
 
   return (
     <article className={cn('relative flex h-full flex-col gap-1 rounded-xl border bg-card p-4', note.pinned && 'border-primary/40')}>

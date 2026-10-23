@@ -96,7 +96,8 @@ export function useDeleteTask() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (id: string) => api<void>(`/tasks/${id}`, { method: 'DELETE' }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: taskKeys.all }),
+    // The server also unlinks the task's notes.
+    onSuccess: () => Promise.all([taskKeys.all, ['notes']].map((queryKey) => queryClient.invalidateQueries({ queryKey }))),
   })
 }
 

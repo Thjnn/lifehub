@@ -84,4 +84,15 @@ class NoteTest extends TestCase
         $this->actingAs($this->user)->deleteJson("/api/v1/notes/{$note->id}")->assertNoContent();
         $this->upsertNote($note->id)->assertConflict();
     }
+
+    public function test_deleting_a_task_unlinks_its_notes(): void
+    {
+        $task = Task::factory()->for($this->user)->create();
+        $note = Note::factory()->for($this->user)->create(['task_id' => $task->id]);
+
+        $this->actingAs($this->user)->deleteJson("/api/v1/tasks/{$task->id}")->assertNoContent();
+
+        $this->assertDatabaseHas('notes', ['id' => $note->id, 'task_id' => null]);
+        $this->upsertNote($note->id, ['pinned' => true])->assertOk();
+    }
 }
