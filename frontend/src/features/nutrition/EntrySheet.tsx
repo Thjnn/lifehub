@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { mealLabels, useAddEntry, type Food, type Meal } from '@/features/nutrition/api'
 import { FoodPicker } from '@/features/nutrition/FoodPicker'
+import { ScanPanel } from '@/features/nutrition/ScanPanel'
 import { useIsDesktop } from '@/hooks/use-media-query'
 import { cn } from '@/lib/utils'
 
@@ -27,7 +28,7 @@ export function EntrySheet({ open, onOpenChange, meal, eatenAt }: Props) {
 
 function EntryForm({ meal, eatenAt, onDone }: { meal: Meal; eatenAt: () => string; onDone: () => void }) {
   const add = useAddEntry()
-  const [mode, setMode] = useState<'table' | 'manual'>('table')
+  const [mode, setMode] = useState<'table' | 'scan' | 'manual'>('table')
   const [food, setFood] = useState<Food>()
   const [grams, setGrams] = useState(0)
   const [manual, setManual] = useState({ name: '', kcal: '', protein_g: '', carbs_g: '', fat_g: '' })
@@ -54,7 +55,7 @@ function EntryForm({ meal, eatenAt, onDone }: { meal: Meal; eatenAt: () => strin
   return (
     <div className="flex flex-col gap-4 px-4 pb-6">
       <div role="tablist" className="flex gap-1 rounded-xl border bg-card p-1">
-        {(['table', 'manual'] as const).map((m) => (
+        {(['table', 'scan', 'manual'] as const).map((m) => (
           <button
             key={m}
             type="button"
@@ -63,12 +64,14 @@ function EntryForm({ meal, eatenAt, onDone }: { meal: Meal; eatenAt: () => strin
             onClick={() => setMode(m)}
             className={cn('flex-1 rounded-lg px-3 py-1.5 text-sm font-medium', mode === m ? 'bg-accent' : 'text-muted-foreground')}
           >
-            {m === 'table' ? 'Chọn món' : 'Tự nhập'}
+            {{ table: 'Chọn món', scan: 'Chụp món', manual: 'Tự nhập' }[m]}
           </button>
         ))}
       </div>
 
-      {mode === 'table' ? (
+      {mode === 'scan' ? (
+        <ScanPanel meal={meal} eatenAt={eatenAt} onDone={onDone} />
+      ) : mode === 'table' ? (
         <>
           <FoodPicker
             food={food}
@@ -99,10 +102,14 @@ function EntryForm({ meal, eatenAt, onDone }: { meal: Meal; eatenAt: () => strin
         </div>
       )}
 
-      <FormError message={error} />
-      <Button size="lg" disabled={add.isPending || (mode === 'table' ? !food || grams <= 0 : !manualValid)} onClick={submit}>
-        {add.isPending ? 'Đang lưu…' : 'Thêm món'}
-      </Button>
+      {mode !== 'scan' && (
+        <>
+          <FormError message={error} />
+          <Button size="lg" disabled={add.isPending || (mode === 'table' ? !food || grams <= 0 : !manualValid)} onClick={submit}>
+            {add.isPending ? 'Đang lưu…' : 'Thêm món'}
+          </Button>
+        </>
+      )}
     </div>
   )
 }

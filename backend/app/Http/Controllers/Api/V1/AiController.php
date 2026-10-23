@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Models\AiActionProposal;
 use App\Models\AiConversation;
 use App\Services\Ai\Coach;
+use App\Services\Nutrition\FoodScanner;
 use App\Services\Nutrition\MealPlanner;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -27,7 +28,25 @@ class AiController extends Controller
 
     private const MEAL_PLAN_PER_DAY = 3;
 
-    public function __construct(private Coach $coach, private MealPlanner $planner) {}
+    private const FOOD_SCAN_PER_DAY = 10;
+
+    public function __construct(private Coach $coach, private MealPlanner $planner, private FoodScanner $scanner) {}
+
+    // POST /ai/food-scan {image: data URL} — recognised dishes for the user to review; nothing is saved, nor the photo
+    public function foodScan(Request $request): JsonResponse
+    {
+        // A data URL in JSON (like the avatar): the browser already shrank the photo to ~1024px / ~150 KB.
+        $image = $request->validate(['image' => ['required', 'string', 'max:6000000', 'regex:#^data:image/(jpeg|png|webp);base64,#']])['image'];
+        $base64 = explode(',', $image, 2)[1];
+        $bytes = base64_decode($base64, true);
+        // Trust the bytes, not the data URL's header.
+        $info = $bytes !== false && strlen($bytes) <= 4 * 1024 * 1024 ? getimagesizefromstring($bytes) : false;
+        abort_unless($info && in_array($info['mime'], ['image/jpeg', 'image/png', 'image/webp'], true), 422, 'Ảnh không hợp lệ (chỉ nhận JPG, PNG, WebP tối đa 4 MB).');
+
+        $this->limit("ai-food-scan:{$request->user()->id}", self::FOOD_SCAN_PER_DAY, 'Bạn đã quét '.self::FOOD_SCAN_PER_DAY.' ảnh trong 24 giờ. Hẹn bạn ngày mai nhé!');
+
+        return response()->json(['data' => $this->scanner->scan($info['mime'], $base64)]);
+    }
 
     // POST /ai/meal-plan {week_start} — a week of meals as a proposal; nothing is saved until confirmed
     public function mealPlan(Request $request): JsonResponse

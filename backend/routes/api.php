@@ -59,6 +59,7 @@ Route::prefix('v1')->group(function () {
         Route::post('/ai/chat', [AiController::class, 'chat']);
         Route::get('/ai/conversations/latest', [AiController::class, 'latest']);
         Route::post('/ai/meal-plan', [AiController::class, 'mealPlan']);
+        Route::post('/ai/food-scan', [AiController::class, 'foodScan']);
         Route::post('/ai/proposals/{proposal}/confirm', [AiController::class, 'confirm'])->whereNumber('proposal');
         Route::post('/ai/proposals/{proposal}/reject', [AiController::class, 'reject'])->whereNumber('proposal');
 

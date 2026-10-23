@@ -16,18 +16,29 @@ class FoodEntryRequest extends FormRequest
      */
     public function rules(): array
     {
-        $manual = ! $this->filled('food_id');
+        $table = $this->filled('food_id');
+        $plate = ! $table && $this->has('components'); // a scanned plate: one named dish made of components
+        $manual = ! $table && ! $plate;
 
         return [
             'eaten_at' => ['required', 'date'],
             'meal' => ['required', Rule::enum(Meal::class)],
             'food_id' => ['nullable', 'integer', 'exists:foods,id'],
-            'grams' => [$manual ? 'nullable' : 'required', 'numeric', 'gt:0', 'max:5000'],
-            'name' => [Rule::requiredIf($manual), 'nullable', 'string', 'max:100'],
+            'grams' => [$table ? 'required' : 'nullable', 'numeric', 'gt:0', 'max:5000'],
+            'name' => [Rule::requiredIf(! $table), 'nullable', 'string', 'max:100'],
             'kcal' => [Rule::requiredIf($manual), 'nullable', 'numeric', 'between:0,10000'],
             'protein_g' => [Rule::requiredIf($manual), 'nullable', 'numeric', 'between:0,1000'],
             'carbs_g' => [Rule::requiredIf($manual), 'nullable', 'numeric', 'between:0,1000'],
             'fat_g' => [Rule::requiredIf($manual), 'nullable', 'numeric', 'between:0,1000'],
+            // Components from the table get the table's numbers on the server; others keep the (AI) estimate sent.
+            'components' => ['sometimes', 'array', 'min:1', 'max:12'],
+            'components.*.name' => ['required', 'string', 'max:100'],
+            'components.*.food_id' => ['nullable', 'integer', 'exists:foods,id'],
+            'components.*.grams' => ['required', 'numeric', 'gt:0', 'max:5000'],
+            'components.*.kcal' => ['required', 'numeric', 'between:0,10000'],
+            'components.*.protein_g' => ['required', 'numeric', 'between:0,1000'],
+            'components.*.carbs_g' => ['required', 'numeric', 'between:0,1000'],
+            'components.*.fat_g' => ['required', 'numeric', 'between:0,1000'],
         ];
     }
 }

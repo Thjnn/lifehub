@@ -702,6 +702,166 @@
                 }
             }
         },
+        "/v1/ai/food-scan": {
+            "post": {
+                "operationId": "ai.foodScan",
+                "tags": [
+                    "Ai"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "image": {
+                                        "type": "string",
+                                        "pattern": "#^data:image/(jpeg|png|webp);base64,#",
+                                        "maxLength": 6000000
+                                    }
+                                },
+                                "required": [
+                                    "image"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "description": "A single component names the plate itself; no name from the model \u2192 the first component's.",
+                                            "properties": {
+                                                "name": {
+                                                    "type": "string"
+                                                },
+                                                "items": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "anyOf": [
+                                                            {
+                                                                "type": "object",
+                                                                "properties": {
+                                                                    "food_id": {
+                                                                        "type": "null"
+                                                                    },
+                                                                    "name": {
+                                                                        "type": "string"
+                                                                    },
+                                                                    "grams": {
+                                                                        "type": "integer"
+                                                                    },
+                                                                    "kcal": {
+                                                                        "type": "number"
+                                                                    },
+                                                                    "protein_g": {
+                                                                        "type": "number"
+                                                                    },
+                                                                    "carbs_g": {
+                                                                        "type": "number"
+                                                                    },
+                                                                    "fat_g": {
+                                                                        "type": "number"
+                                                                    },
+                                                                    "estimated": {
+                                                                        "type": "boolean"
+                                                                    },
+                                                                    "confidence": {
+                                                                        "type": "number"
+                                                                    }
+                                                                },
+                                                                "required": [
+                                                                    "food_id",
+                                                                    "name",
+                                                                    "grams",
+                                                                    "kcal",
+                                                                    "protein_g",
+                                                                    "carbs_g",
+                                                                    "fat_g",
+                                                                    "estimated",
+                                                                    "confidence"
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "null"
+                                                            },
+                                                            {
+                                                                "type": "object",
+                                                                "properties": {
+                                                                    "food_id": {
+                                                                        "anyOf": [
+                                                                            {
+                                                                                "type": "string"
+                                                                            },
+                                                                            {}
+                                                                        ]
+                                                                    },
+                                                                    "name": {
+                                                                        "anyOf": [
+                                                                            {
+                                                                                "type": "string"
+                                                                            },
+                                                                            {}
+                                                                        ]
+                                                                    },
+                                                                    "grams": {
+                                                                        "anyOf": [
+                                                                            {
+                                                                                "type": "integer"
+                                                                            },
+                                                                            {}
+                                                                        ]
+                                                                    },
+                                                                    "estimated": {
+                                                                        "type": "boolean"
+                                                                    },
+                                                                    "confidence": {
+                                                                        "type": "number"
+                                                                    }
+                                                                },
+                                                                "required": [
+                                                                    "food_id",
+                                                                    "name",
+                                                                    "grams",
+                                                                    "estimated",
+                                                                    "confidence"
+                                                                ],
+                                                                "additionalProperties": {}
+                                                            }
+                                                        ]
+                                                    }
+                                                }
+                                            },
+                                            "required": [
+                                                "name",
+                                                "items"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
         "/v1/ai/proposals/{proposal}/confirm": {
             "post": {
                 "operationId": "ai.confirm",
@@ -2960,6 +3120,13 @@
                                                     },
                                                     "source": {
                                                         "type": "string"
+                                                    },
+                                                    "components": {
+                                                        "type": [
+                                                            "array",
+                                                            "null"
+                                                        ],
+                                                        "items": {}
                                                     }
                                                 },
                                                 "required": [
@@ -2973,7 +3140,8 @@
                                                     "protein_g",
                                                     "carbs_g",
                                                     "fat_g",
-                                                    "source"
+                                                    "source",
+                                                    "components"
                                                 ]
                                             }
                                         },
@@ -3111,6 +3279,13 @@
                                                 },
                                                 "source": {
                                                     "type": "string"
+                                                },
+                                                "components": {
+                                                    "type": [
+                                                        "array",
+                                                        "null"
+                                                    ],
+                                                    "items": {}
                                                 }
                                             },
                                             "required": [
@@ -3124,7 +3299,8 @@
                                                 "protein_g",
                                                 "carbs_g",
                                                 "fat_g",
-                                                "source"
+                                                "source",
+                                                "components"
                                             ]
                                         }
                                     },
@@ -4685,6 +4861,59 @@
                         ],
                         "minimum": 0,
                         "maximum": 1000
+                    },
+                    "components": {
+                        "type": "array",
+                        "description": "Components from the table get the table's numbers on the server; others keep the (AI) estimate sent.",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "name": {
+                                    "type": "string",
+                                    "maxLength": 100
+                                },
+                                "food_id": {
+                                    "type": [
+                                        "integer",
+                                        "null"
+                                    ]
+                                },
+                                "grams": {
+                                    "type": "number",
+                                    "maximum": 5000
+                                },
+                                "kcal": {
+                                    "type": "number",
+                                    "minimum": 0,
+                                    "maximum": 10000
+                                },
+                                "protein_g": {
+                                    "type": "number",
+                                    "minimum": 0,
+                                    "maximum": 1000
+                                },
+                                "carbs_g": {
+                                    "type": "number",
+                                    "minimum": 0,
+                                    "maximum": 1000
+                                },
+                                "fat_g": {
+                                    "type": "number",
+                                    "minimum": 0,
+                                    "maximum": 1000
+                                }
+                            },
+                            "required": [
+                                "name",
+                                "grams",
+                                "kcal",
+                                "protein_g",
+                                "carbs_g",
+                                "fat_g"
+                            ]
+                        },
+                        "minItems": 1,
+                        "maxItems": 12
                     }
                 },
                 "required": [

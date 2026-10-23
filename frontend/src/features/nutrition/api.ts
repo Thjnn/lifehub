@@ -27,8 +27,19 @@ export type FoodEntry = Macros & {
   name: string
   grams: number | null
   source: 'table' | 'manual' | 'scan'
+  components: Component[] | null
 }
-export type EntryInput = { eaten_at: string; meal: Meal; food_id: number; grams: number } | (Macros & { eaten_at: string; meal: Meal; name: string; grams: null })
+// An ingredient of a scanned plate. estimated = not in the table (AI numbers).
+export type Component = Macros & { name: string; food_id: number | null; grams: number; estimated: boolean }
+
+export type EntryInput =
+  | { eaten_at: string; meal: Meal; food_id: number; grams: number }
+  | (Macros & { eaten_at: string; meal: Meal; name: string; grams: null })
+  // A scanned plate: one named dish; the server totals the components (table ones from the table).
+  | { eaten_at: string; meal: Meal; name: string; components: Omit<Component, 'estimated'>[] }
+
+// A dish recognised in a photo: food_id = from the table (table numbers); null = Gemini's estimate.
+export type ScanItem = Macros & { food_id: number | null; name: string; grams: number; estimated: boolean; confidence: number }
 
 // A dish of the confirmed weekly plan; food_entry_id is set once it was logged with "Đã ăn".
 export type PlanItem = Macros & {
@@ -86,6 +97,12 @@ export const useGenerateMealPlan = () =>
   useMutation({
     mutationFn: (weekStart: string) =>
       api<{ data: MealPlanProposal }>('/ai/meal-plan', { method: 'POST', body: { week_start: weekStart } }).then((r) => r.data),
+  })
+
+// Nothing is saved by a scan: the user reviews the plate, then logs it as one entry with useAddEntry.
+export const useFoodScan = () =>
+  useMutation({
+    mutationFn: (image: string) => api<{ data: { name: string; items: ScanItem[] } }>('/ai/food-scan', { method: 'POST', body: { image } }).then((r) => r.data),
   })
 
 // Profile, entries and totals all depend on each other: refresh the whole feature after any write.

@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['eaten_at', 'meal', 'food_id', 'name', 'grams', 'kcal', 'protein_g', 'carbs_g', 'fat_g', 'source'])]
+#[Fillable(['eaten_at', 'meal', 'food_id', 'name', 'grams', 'kcal', 'protein_g', 'carbs_g', 'fat_g', 'components', 'source'])]
 class FoodEntry extends Model
 {
     /** @use HasFactory<FoodEntryFactory> */
@@ -29,6 +29,7 @@ class FoodEntry extends Model
             'protein_g' => 'float',
             'carbs_g' => 'float',
             'fat_g' => 'float',
+            'components' => 'array',
         ];
     }
 

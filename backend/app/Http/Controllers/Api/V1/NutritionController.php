@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
@@ -98,7 +99,7 @@ class NutritionController extends Controller
         $days = (int) Carbon::parse($data['from'])->diffInDays(Carbon::parse($data['to']), false);
         // Shift by calendar days in the user's timezone, so 07:30 stays 07:30 locally.
         $copies = $this->dayEntries($request, $data['from'])->get()->map(fn (FoodEntry $e) => [
-            ...$e->only(['meal', 'food_id', 'name', 'grams', 'kcal', 'protein_g', 'carbs_g', 'fat_g', 'source']),
+            ...$e->only(['meal', 'food_id', 'name', 'grams', 'kcal', 'protein_g', 'carbs_g', 'fat_g', 'components', 'source']),
             'eaten_at' => $e->eaten_at->copy()->setTimezone($timezone)->addDays($days)->utc(),
         ]);
         abort_if($copies->isEmpty(), 422, 'Ngày nguồn chưa có món nào.');
@@ -147,6 +148,20 @@ class NutritionController extends Controller
             return $base + ['food_id' => $food->id, 'name' => $food->name, 'source' => 'table'] + $food->scaled($data['grams']);
         }
 
+        if (isset($data['components'])) {
+            $foods = Food::findMany(array_filter(array_column($data['components'], 'food_id')))->keyBy('id');
+            $parts = array_map(function (array $c) use ($foods) {
+                $food = $foods->get($c['food_id'] ?? 0);
+
+                return ['name' => $food?->name ?? $c['name'], 'food_id' => $food?->id, 'grams' => round((float) $c['grams'], 1), 'estimated' => $food === null]
+                    + ($food?->scaled($c['grams']) ?? array_map(fn ($v) => round((float) $v, 1), Arr::only($c, ['kcal', 'protein_g', 'carbs_g', 'fat_g'])));
+            }, $data['components']);
+            $sum = fn (string $key) => round(array_sum(array_column($parts, $key)), 1);
+
+            return ['grams' => $sum('grams')] + $base + ['food_id' => null, 'name' => $data['name'], 'source' => 'scan', 'components' => $parts]
+                + ['kcal' => $sum('kcal'), 'protein_g' => $sum('protein_g'), 'carbs_g' => $sum('carbs_g'), 'fat_g' => $sum('fat_g')];
+        }
+
         return $base + ['food_id' => null, 'source' => 'manual'] + array_intersect_key($data, array_flip(['name', 'kcal', 'protein_g', 'carbs_g', 'fat_g']));
     }
 
@@ -167,6 +182,7 @@ class NutritionController extends Controller
             'carbs_g' => $e->carbs_g,
             'fat_g' => $e->fat_g,
             'source' => $e->source,
+            'components' => $e->components,
         ];
     }
 

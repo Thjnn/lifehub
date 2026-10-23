@@ -119,12 +119,30 @@ export function NutritionPage() {
             ) : (
               <ul className="divide-y">
                 {entries.map((e) => (
-                  <li key={e.id} className="flex items-center gap-3 px-4 py-2 text-sm">
+                  <li key={e.id} className="flex items-start gap-3 px-4 py-2 text-sm">
                     <div className="min-w-0 flex-1">
-                      <p className="truncate">
-                        {e.name}
-                        {e.source === 'manual' && <span className="ml-2 text-xs text-muted-foreground">(tự nhập)</span>}
-                      </p>
+                      {e.components ? (
+                        // A scanned plate: one dish; its components open on tap (native <details>, no JS).
+                        <details className="group">
+                          <summary className="flex cursor-pointer list-none items-center gap-1 [&::-webkit-details-marker]:hidden">
+                            <ChevronRight className="size-3.5 shrink-0 text-muted-foreground transition-transform group-open:rotate-90" aria-hidden />
+                            <span className="truncate">{e.name}</span>
+                            <span className="ml-1 text-xs whitespace-nowrap text-muted-foreground">(chụp ảnh)</span>
+                          </summary>
+                          <ul className="mt-1 mb-1 ml-5 flex flex-col gap-0.5 text-xs text-muted-foreground tabular-nums">
+                            {e.components.map((c, i) => (
+                              <li key={i}>
+                                {c.name} · {c.grams} g · {Math.round(c.kcal)} kcal · đạm {c.protein_g} g{c.estimated && <span className="text-warning"> · AI ước tính</span>}
+                              </li>
+                            ))}
+                          </ul>
+                        </details>
+                      ) : (
+                        <p className="truncate">
+                          {e.name}
+                          {e.source === 'manual' && <span className="ml-2 text-xs text-muted-foreground">(tự nhập)</span>}
+                        </p>
+                      )}
                       <p className="text-xs text-muted-foreground tabular-nums">
                         {e.grams ? `${e.grams} g · ` : ''}đạm {e.protein_g} g
                       </p>

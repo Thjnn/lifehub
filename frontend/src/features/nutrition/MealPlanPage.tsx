@@ -45,7 +45,7 @@ export function MealPlanPage() {
   const [proposal, setProposal] = useState<MealPlanProposal>()
   const [editing, setEditing] = useState<{ item?: PlanItem; date: string }>()
   // A new dish goes on today when today is in this week, else on Monday.
-  const today = dateKey(new Date())
+  const [today] = useState(() => dateKey(new Date()))
   const defaultDay = mondayOf(today) === week ? today : week
 
   const askAi = () => generate.mutate(week, { onSuccess: setProposal, onError: (err) => toast.error(err.message) })
