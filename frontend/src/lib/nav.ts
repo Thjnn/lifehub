@@ -31,6 +31,8 @@ export const navItems: NavItem[] = [
     children: [
       { to: '/app/nutrition', label: 'Nhật ký', end: true },
       { to: '/app/nutrition/plan', label: 'Thực đơn tuần' },
+      { to: '/app/nutrition/workouts', label: 'Tập luyện' },
+      { to: '/app/nutrition/body', label: 'Cân nặng' },
     ],
   },
   { to: '/app/notes', label: 'Ghi chú', icon: NotebookPen },

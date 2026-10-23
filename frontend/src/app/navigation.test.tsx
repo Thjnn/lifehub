@@ -38,6 +38,12 @@ const responses: [RegExp, unknown][] = [
   [/\/budgets\?/, { data: [{ id: 1, category_id: null, period_start: `${month}-01`, period_end: `${month}-28`, amount: '3000000.00', spent: '45000.00', remaining: '2955000.00', percent: 2 }] }],
   [/\/nutrition\/profile$/, { data: { goal: 'cut', sex: 'male', birth_year: 2001, weight_kg: 70, height_cm: 175, workouts_per_week: 4, targets: { bmr: 1674, tdee: 2594, kcal: 2210, protein_g: 140 } } }],
   [/\/food-entries\?/, { data: [{ id: 1, eaten_at: iso(now), meal: 'lunch', food_id: 1, name: 'Phở bò', grams: 500, kcal: 450, protein_g: 25, carbs_g: 55, fat_g: 12, source: 'table', components: null }, { id: 2, eaten_at: iso(now), meal: 'lunch', food_id: null, name: 'Salad ức gà', grams: 220, kcal: 120, protein_g: 2, carbs_g: 6, fat_g: 8, source: 'scan', components: [{ name: 'Dưa leo', food_id: 1, grams: 200, kcal: 30, protein_g: 1.4, carbs_g: 7.2, fat_g: 0.2, estimated: false }, { name: 'Sốt mè', food_id: null, grams: 20, kcal: 90, protein_g: 1, carbs_g: 4, fat_g: 8, estimated: true }] }], meta: { date: day, totals: { kcal: 450, protein_g: 25, carbs_g: 55, fat_g: 12 }, targets: null, plan: [planItem] } }],
+  [/\/exercises$/, { data: [{ id: 1, name: 'Squat (gánh tạ)', kind: 'strength', muscle_group: 'Chân', is_custom: false }] }],
+  [/\/workouts$/, { data: [{ id: 1, performed_at: iso(now), duration_min: 60, note: 'Ổn', event_id: null, sets: [
+    { exercise_id: 1, exercise_name: 'Squat (gánh tạ)', kind: 'strength', reps: 10, weight_kg: 40, duration_min: null, distance_km: null },
+    { exercise_id: 2, exercise_name: 'Chạy bộ', kind: 'cardio', reps: null, weight_kg: null, duration_min: 20, distance_km: 3.5 },
+  ] }] }],
+  [/\/body-measurements$/, { data: [{ id: 2, measured_on: day, weight_kg: 69.5, waist_cm: 80, body_fat_pct: null }, { id: 1, measured_on: '2026-09-01', weight_kg: 71, waist_cm: null, body_fat_pct: null }] }],
   [/\/meal-plan\?/, { data: [planItem, { ...planItem, id: 2, meal: 'breakfast', food_entry_id: 1 }], meta: { week_start: day, budget_vnd: '700000.00' } }],
   [/\/notes\?/, page([{ id: '33333333-3333-4333-8333-333333333333', title: 'Ý tưởng', body: 'Ghi chú\nhai dòng', pinned: true, task_id: null, event_id: null, created_at: iso(now), updated_at: iso(now) }])],
   [/\/reports\/finance\?/, { data: { month, income: '0.00', expense: '45000.00', net: '-45000.00', previous: { income: '0.00', expense: '0.00' }, by_category: [{ category_id: 1, amount: '45000.00' }] } }],

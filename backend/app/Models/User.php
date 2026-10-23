@@ -87,6 +87,21 @@ class User extends Authenticatable
         return $this->hasMany(MealPlanItem::class);
     }
 
+    public function workouts(): HasMany
+    {
+        return $this->hasMany(Workout::class);
+    }
+
+    public function exercises(): HasMany
+    {
+        return $this->hasMany(Exercise::class);
+    }
+
+    public function bodyMeasurements(): HasMany
+    {
+        return $this->hasMany(BodyMeasurement::class);
+    }
+
     /**
      * Delete the user and all their data. Transactions restrict deleting accounts/categories, so they go first
      * (soft-deleted ones too); everything else cascades from users. Sanctum tokens are polymorphic, without a foreign key.

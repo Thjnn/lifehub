@@ -75,6 +75,9 @@ class AiTools
             ['name' => 'get_nutrition', 'description' => 'Daily calorie/protein targets, what the user ate each day, and their confirmed meal plan (which planned dishes were eaten). Max 14 days.', 'parameters' => ['type' => 'object', 'properties' => [
                 'date_from' => $date, 'date_to' => $date,
             ], 'required' => ['date_from', 'date_to']]],
+            ['name' => 'get_fitness', 'description' => 'The user\'s workouts (exercises, sets, best weight) and body weight trend over the last N days.', 'parameters' => ['type' => 'object', 'properties' => [
+                'days' => ['type' => 'integer', 'description' => '1 to 90'],
+            ], 'required' => ['days']]],
             ['name' => 'get_weather', 'description' => 'Weather now, next hours and 3 days for the user\'s city.'], // no parameters
             ['name' => 'propose_task', 'description' => 'Suggest creating a task. The user must confirm; nothing is saved until then.', 'parameters' => ['type' => 'object', 'properties' => [
                 'title' => ['type' => 'string'], 'due_at' => $dateTime, 'priority' => ['type' => 'string', 'enum' => ['low', 'medium', 'high', 'urgent']], 'description' => ['type' => 'string'],
@@ -101,6 +104,7 @@ class AiTools
                 'get_budgets' => $this->budgets((string) ($args['month'] ?? now($this->timezone)->format('Y-m'))),
                 'get_debts' => $this->debtsDue(max(1, min(60, (int) ($args['days'] ?? 14)))),
                 'get_nutrition' => $this->nutrition($this->date($args['date_from'] ?? null), $this->date($args['date_to'] ?? null)),
+                'get_fitness' => $this->fitness(max(1, min(90, (int) ($args['days'] ?? 14)))),
                 'get_weather' => $this->weatherNow(),
                 'propose_task' => $this->proposeTask($args),
                 'propose_event' => $this->proposeEvent($args),
@@ -321,6 +325,33 @@ class AiTools
         return [
             'targets' => $profile ? NutritionTargets::for($profile, now()->year) : 'No nutrition profile yet (the user can set one in Dinh dưỡng).',
             'days' => $days,
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function fitness(int $days): array
+    {
+        $since = now($this->timezone)->subDays($days)->startOfDay();
+        $workouts = $this->user->workouts()->with('sets.exercise')->where('performed_at', '>=', $since->copy()->utc())->latest('performed_at')->get();
+        $weights = $this->user->bodyMeasurements()->whereDate('measured_on', '>=', $since->toDateString())->orderBy('measured_on')->get();
+
+        return [
+            'workouts' => $workouts->map(fn ($w) => [
+                'date' => $this->local($w->performed_at),
+                'duration_min' => $w->duration_min,
+                // One line per exercise: sets, best weight, total minutes/km for cardio
+                'exercises' => $w->sets->groupBy('exercise_id')->map(fn ($sets) => array_filter([
+                    'name' => $sets->first()->exercise->name,
+                    'sets' => $sets->count(),
+                    'reps' => $sets->pluck('reps')->filter()->implode('/') ?: null,
+                    'best_weight_kg' => $sets->max('weight_kg'),
+                    'minutes' => $sets->sum('duration_min') ?: null,
+                    'km' => $sets->sum('distance_km') ?: null,
+                ], fn ($v) => $v !== null))->values()->all(),
+            ])->all(),
+            'weight_kg' => $weights->map(fn ($m) => ['date' => $m->measured_on->toDateString(), 'weight' => $m->weight_kg])->all(),
         ];
     }
 
