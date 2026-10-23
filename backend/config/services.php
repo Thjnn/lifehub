@@ -22,6 +22,18 @@ return [
         'key' => env('RESEND_API_KEY'),
     ],
 
+    // Deadline reminders by Web Push (spec §15.2). Keys from `php artisan push:vapid`; set them on Render, never commit them.
+    'webpush' => [
+        'public_key' => env('VAPID_PUBLIC_KEY'),
+        'private_key' => env('VAPID_PRIVATE_KEY'),
+        'subject' => env('VAPID_SUBJECT'), // mailto:you@example.com — how push services can reach the sender
+    ],
+
+    // Shared with the GitHub Actions cron that calls POST /api/internal/reminders (no worker on Render).
+    'reminders' => [
+        'secret' => env('REMINDER_SECRET'),
+    ],
+
     // AI Coach (spec §9.5). Called from the backend only; the key never reaches the frontend.
     // Google renames models often — set GEMINI_MODEL to a Flash model listed in AI Studio.
     'gemini' => [

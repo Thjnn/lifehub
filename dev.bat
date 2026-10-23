@@ -9,6 +9,10 @@ rem Laragon's PHP is often not on PATH outside its terminal: use the newest php-
 where php >nul 2>nul || for /d %%D in ("%~dp0..\..\bin\php\php-8.3*") do set "PATH=%%~fD;%PATH%"
 where php >nul 2>nul || (echo Không tìm thấy PHP. Mở bằng Terminal của Laragon hoặc thêm PHP vào PATH. & pause & exit /b 1)
 
+rem Web Push encrypts each notification with a fresh OpenSSL key; Windows PHP can't create keys unless
+rem OPENSSL_CONF points at its openssl.cnf. It must be set before PHP starts (the backend window inherits it).
+if not defined OPENSSL_CONF for /f "delims=" %%P in ('where php') do if not defined OPENSSL_CONF if exist "%%~dpPextras\ssl\openssl.cnf" set "OPENSSL_CONF=%%~dpPextras\ssl\openssl.cnf"
+
 echo Khởi động Postgres (Docker)...
 docker compose up -d db || (echo Docker Desktop chưa chạy? Mở Docker Desktop rồi chạy lại. & pause & exit /b 1)
 

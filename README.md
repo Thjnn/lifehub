@@ -10,7 +10,8 @@ Personal Life OS: quản lý lịch, công việc, tài chính kèm AI Coach. PW
 - **Tài chính:** tài khoản, danh mục, giao dịch (thu/chi/chuyển khoản), ngân sách, báo cáo tháng, khoản nợ/trả góp kiểu SPayLater (hạn mức, khả dụng, cần trả).
 - **Tổng quan:** việc hôm nay/quá hạn, chi tiêu tháng, thời tiết (Open-Meteo, gọi từ trình duyệt).
 - **AI Coach (Gemini):** briefing mỗi ngày, chat trả lời từ dữ liệu thật; AI chỉ *đề xuất* tạo việc/sự kiện, người dùng phải xác nhận; không có quyền ghi giao dịch.
-- **Dinh dưỡng:** mục tiêu calo/protein tính theo công thức Mifflin-St Jeor, nhật ký ăn uống theo bữa với ~40 món Việt có sẵn hoặc tự nhập.
+- **Dinh dưỡng & tập luyện:** mục tiêu calo/protein tính theo công thức Mifflin-St Jeor; nhật ký ăn uống với ~80 món Việt, rau, trái cây, đồ uống; chụp ảnh món để AI nhận diện (lưu 1 món kèm thành phần); thực đơn tuần do AI đề xuất theo ngân sách "Ăn uống" (sửa tự do, bấm "Đã ăn"); ghi buổi tập theo set, cân nặng và xu hướng.
+- **Nhắc hạn chót:** thông báo đẩy (Web Push) khoảng 08:00 và 20:00 khi có việc đến hạn trong 3 ngày tới.
 - **Ghi chú:** tìm kiếm không cần gõ dấu, ghim lên đầu, gắn vào công việc/sự kiện, viết được khi offline.
 - **PWA offline:** cài được, xem dữ liệu cũ khi mất mạng, ghi offline rồi tự đồng bộ (outbox).
 - **Quyền riêng tư:** xuất toàn bộ dữ liệu JSON, xoá cache trên máy, xoá tài khoản.
@@ -126,7 +127,15 @@ Deploy xong, mở `https://<tên-service>.onrender.com/api/health` → `{"status
 ### 4. Keepalive
 GitHub repo → Settings → Secrets and variables → Actions → **Variables** → thêm `API_HEALTH_URL` = `https://<tên-service>.onrender.com/api/health`. Workflow `keepalive.yml` ping mỗi ngày để Supabase không bị pause.
 
-### 5. Backup
+### 5. Nhắc hạn chót (Web Push)
+1. Ở máy: Terminal của Laragon → `cd backend` → `php artisan push:vapid`. Lệnh in ra `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`, `REMINDER_SECRET`. **Không commit** các giá trị này.
+2. Render → Environment: thêm cả 4 biến (`VAPID_SUBJECT` = `mailto:<email của bạn>`).
+3. GitHub repo → Settings → Secrets and variables → Actions → **Secrets** → `REMINDER_SECRET` (giống hệt Render). Workflow `reminders.yml` chạy mỗi giờ, gọi `POST /api/internal/reminders` (dùng lại biến `API_HEALTH_URL` ở bước 4).
+4. Trong app: Cài đặt → Tùy chọn → bật "Nhắc hạn chót" trên từng thiết bị. iPhone cần thêm app vào màn hình chính (iOS 16.4+). Chạy thử: tab Actions → Deadline reminders → Run workflow (chỉ gửi trong khung 08–12h / 20–24h và khi có việc đến hạn).
+
+Dễ nhất là thử trên bản deploy. Muốn thử ở local: thêm các biến trên vào `backend/.env` và tạm đổi `FRONTEND_URL=http://localhost:4173` (CORS), chạy `dev.bat`, rồi `npm run build && npm run preview` trong `frontend/` (chế độ dev không có service worker nên không đăng ký thông báo được). `dev.bat` đặt sẵn `OPENSSL_CONF` vì PHP trên Windows cần nó để mã hoá thông báo.
+
+### 6. Backup
 `backup.yml` chạy `pg_dump` mỗi tuần, **mã hoá** (repo public nên artifact ai cũng tải được) rồi lưu làm artifact 30 ngày. Thêm 2 **Secrets** trong GitHub repo:
 
 - `SUPABASE_DB_URL`: URI Session pooler ở bước 1.

@@ -1,0 +1,27 @@
+name: Deadline reminders
+
+# Spec §15.2: Render has no scheduler, so GitHub calls the backend every hour. The backend decides who gets a
+# reminder (around 08:00 and 20:00 in each user's timezone, each slot at most once), so a late or skipped run
+# is caught up by the next one. Free for a public repo; each run also wakes Render.
+on:
+  schedule:
+    - cron: '5 * * * *' # every hour at :05 (GitHub may run it 5–30 min late)
+  workflow_dispatch:
+
+jobs:
+  remind:
+    runs-on: ubuntu-latest
+    # Needs repo secret REMINDER_SECRET (same value as on Render) and the existing variable API_HEALTH_URL
+    # (…/api/health). Skipped until both exist.
+    if: vars.API_HEALTH_URL != ''
+    steps:
+      - name: Send due reminders
+        env:
+          SECRET: ${{ secrets.REMINDER_SECRET }}
+          HEALTH_URL: ${{ vars.API_HEALTH_URL }}
+        run: |
+          if [ -z "$SECRET" ]; then echo "REMINDER_SECRET not set — skipping"; exit 0; fi
+          # …/api/health → …/api/internal/reminders. Generous timeout: a sleeping Render instance takes 30–60s.
+          curl --fail-with-body --silent --show-error --max-time 120 --retry 2 --retry-delay 15 --retry-all-errors \
+            -X POST -H "X-Reminder-Secret: $SECRET" -H "Accept: application/json" \
+            "${HEALTH_URL%/health}/internal/reminders"

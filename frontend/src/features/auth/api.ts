@@ -1,5 +1,6 @@
 import { queryOptions } from '@tanstack/react-query'
 import { clearOfflineData, queryClient } from '@/app/query-client'
+import { disablePush } from '@/features/settings/push'
 import { api, tokenStore } from '@/lib/api-client'
 
 export type City = { name: string; latitude: number; longitude: number }
@@ -75,6 +76,8 @@ export const resetPassword = (values: { token: string; email: string; password: 
 
 export async function logout() {
   try {
+    // Stop deadline reminders on this device while the token still works (spec §15.2).
+    await disablePush().catch(() => {})
     await api('/auth/logout', { method: 'POST' })
   } catch {
     // Token may already be expired or the server unreachable — still sign out locally.

@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\V1\NoteController;
 use App\Http\Controllers\Api\V1\NutritionController;
 use App\Http\Controllers\Api\V1\PrivacyController;
 use App\Http\Controllers\Api\V1\ProfileController;
+use App\Http\Controllers\Api\V1\PushController;
 use App\Http\Controllers\Api\V1\SettingsController;
 use App\Http\Controllers\Api\V1\TaskController;
 use App\Http\Controllers\Api\V1\TransactionController;
@@ -34,6 +35,9 @@ Route::get('/health', function () {
 
     return response()->json(['status' => 'ok']);
 });
+
+// Deadline reminders (spec §15.2): GitHub Actions cron, shared-secret header (Render has no scheduler).
+Route::post('/internal/reminders', [PushController::class, 'reminders'])->middleware('throttle:10,1');
 
 Route::prefix('v1')->group(function () {
     Route::prefix('auth')->middleware('throttle:6,1')->group(function () {
@@ -92,6 +96,10 @@ Route::prefix('v1')->group(function () {
         Route::put('/meal-plan-items/{item}', [MealPlanController::class, 'update'])->whereNumber('item');
         Route::post('/meal-plan-items/{item}/eat', [MealPlanController::class, 'eat'])->whereNumber('item');
         Route::delete('/meal-plan-items/{item}', [MealPlanController::class, 'destroy'])->whereNumber('item');
+
+        Route::get('/push/key', [PushController::class, 'key']);
+        Route::post('/push/subscriptions', [PushController::class, 'subscribe']);
+        Route::delete('/push/subscriptions', [PushController::class, 'unsubscribe']);
 
         Route::get('/notes', [NoteController::class, 'index']);
         Route::put('/notes/{id}', [NoteController::class, 'upsert'])->whereUuid('id');

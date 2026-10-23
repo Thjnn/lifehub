@@ -4408,6 +4408,230 @@
                 }
             }
         },
+        "/internal/reminders": {
+            "post": {
+                "operationId": "push.reminders",
+                "tags": [
+                    "Push"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "properties": {
+                                                "users": {
+                                                    "type": "integer",
+                                                    "const": 0
+                                                },
+                                                "sent": {
+                                                    "type": "integer",
+                                                    "const": 0
+                                                },
+                                                "expired": {
+                                                    "type": "integer",
+                                                    "const": 0
+                                                }
+                                            },
+                                            "required": [
+                                                "users",
+                                                "sent",
+                                                "expired"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "examples": [
+                                                "Unauthorized."
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "503": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "examples": [
+                                                "Web Push ch\u01b0a \u0111\u01b0\u1ee3c c\u1ea5u h\u00ecnh (thi\u1ebfu VAPID_*)."
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/push/key": {
+            "get": {
+                "operationId": "push.key",
+                "tags": [
+                    "Push"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "properties": {
+                                                "public_key": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                }
+                                            },
+                                            "required": [
+                                                "public_key"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/v1/push/subscriptions": {
+            "post": {
+                "operationId": "push.subscribe",
+                "tags": [
+                    "Push"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "endpoint": {
+                                        "type": "string",
+                                        "maxLength": 1000
+                                    },
+                                    "keys": {
+                                        "type": "object",
+                                        "properties": {
+                                            "p256dh": {
+                                                "type": "string",
+                                                "maxLength": 255
+                                            },
+                                            "auth": {
+                                                "type": "string",
+                                                "maxLength": 255
+                                            }
+                                        },
+                                        "required": [
+                                            "p256dh",
+                                            "auth"
+                                        ]
+                                    }
+                                },
+                                "required": [
+                                    "endpoint",
+                                    "keys"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "push.unsubscribe",
+                "tags": [
+                    "Push"
+                ],
+                "parameters": [
+                    {
+                        "name": "endpoint",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "maxLength": 1000
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No content"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
         "/v1/me/settings": {
             "patch": {
                 "operationId": "settings.update",

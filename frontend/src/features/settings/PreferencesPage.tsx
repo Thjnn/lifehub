@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { meQuery } from '@/features/auth/api'
 import { useUpdateSettings } from '@/features/dashboard/api'
 import { searchCities, type CityResult } from '@/features/dashboard/open-meteo'
+import { DeadlineReminders } from '@/features/settings/DeadlineReminders'
 import { useOnlineStatus } from '@/hooks/use-online-status'
 
 // Common zones first; the current one is always selectable even if not listed.
@@ -114,6 +115,8 @@ export function PreferencesPage() {
           onChange={(value) => online && save({ timezone: value }, 'Đã đổi múi giờ')}
         />
       </section>
+
+      <DeadlineReminders />
     </div>
   )
 }

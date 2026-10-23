@@ -12,6 +12,10 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'prompt',
+      // Our own service worker (src/sw.ts) so it can show deadline reminders (Web Push, spec §15.2).
+      strategies: 'injectManifest',
+      srcDir: 'src',
+      filename: 'sw.ts',
       manifest: {
         name: 'LIFEHUB',
         short_name: 'LIFEHUB',
@@ -29,13 +33,12 @@ export default defineConfig({
           { src: '/icons/maskable-icon-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
         ],
       },
-      workbox: {
-        // App shell only (offline level 1). API GETs are never cached here — TanStack Query persists them (spec §6.4).
+      injectManifest: {
+        // App shell only (offline level 1). API GETs are never cached — TanStack Query persists them (spec §6.4).
+        // Navigation fallback (index.html, never /api) lives in src/sw.ts.
         globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2}'],
         // Only precache Latin + Vietnamese font subsets; the others load on demand via unicode-range.
         globIgnores: ['**/inter-{greek,greek-ext,cyrillic,cyrillic-ext}-*'],
-        navigateFallback: '/index.html',
-        navigateFallbackDenylist: [/^\/api\//],
       },
     }),
   ],
