@@ -71,6 +71,7 @@ Route::prefix('v1')->group(function () {
         Route::get('/foods', [NutritionController::class, 'foods']);
         Route::get('/food-entries', [NutritionController::class, 'entries']);
         Route::post('/food-entries', [NutritionController::class, 'storeEntry']);
+        Route::post('/food-entries/copy', [NutritionController::class, 'copyDay']);
         Route::delete('/food-entries/{entry}', [NutritionController::class, 'destroyEntry'])->whereNumber('entry');
 
         Route::get('/notes', [NoteController::class, 'index']);

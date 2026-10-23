@@ -2738,6 +2738,96 @@
                 }
             }
         },
+        "/v1/food-entries/copy": {
+            "post": {
+                "operationId": "nutrition.copyDay",
+                "summary": "POST /food-entries/copy {from, to} \u2014 log a day's meals again (same dishes, meals and times of day).\nOnly into an empty day, so a double tap can't log everything twice",
+                "tags": [
+                    "Nutrition"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "from": {
+                                        "type": "string",
+                                        "format": "date"
+                                    },
+                                    "to": {
+                                        "type": "string",
+                                        "format": "date"
+                                    }
+                                },
+                                "required": [
+                                    "from",
+                                    "to"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "properties": {
+                                                "copied": {
+                                                    "type": "integer",
+                                                    "minimum": 0
+                                                }
+                                            },
+                                            "required": [
+                                                "copied"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "examples": [
+                                                "Ng\u00e0y n\u00e0y \u0111\u00e3 c\u00f3 m\u00f3n, kh\u00f4ng ch\u00e9p \u0111\u00e8."
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
         "/v1/food-entries/{entry}": {
             "delete": {
                 "operationId": "nutrition.destroyEntry",

@@ -71,6 +71,30 @@ class NutritionTest extends TestCase
             ->assertJsonPath('meta.targets', null);
     }
 
+    public function test_salad_ingredients_and_drinks_are_in_the_table(): void
+    {
+        $cucumber = Food::where('name', 'Dưa leo')->sole(); // 100 g = 15 kcal
+
+        $this->actingAs($this->user)->postJson('/api/v1/food-entries', [
+            'eaten_at' => now()->toIso8601String(), 'meal' => 'lunch', 'food_id' => $cucumber->id, 'grams' => 150,
+        ])->assertCreated()->assertJsonPath('data.kcal', 22.5);
+        $this->assertDatabaseHas('foods', ['name' => 'Cà phê đen không đường']);
+    }
+
+    public function test_copy_a_day_keeps_meals_and_local_times_only_into_an_empty_day(): void
+    {
+        FoodEntry::factory()->for($this->user)->create(['eaten_at' => '2026-10-21 00:30:00', 'meal' => 'breakfast', 'name' => 'Phở bò']); // 07:30 VN
+        FoodEntry::factory()->for($this->user)->create(['eaten_at' => '2026-10-21 17:30:00', 'name' => 'Sau nửa đêm']); // 00:30 on the 22nd VN: not part of the 21st
+        FoodEntry::factory()->create(['eaten_at' => '2026-10-21 00:30:00']); // someone else
+
+        $copy = fn () => $this->actingAs($this->user)->postJson('/api/v1/food-entries/copy', ['from' => '2026-10-21', 'to' => '2026-10-23']);
+        $copy()->assertCreated()->assertJsonPath('data.copied', 1);
+        $this->assertDatabaseHas('food_entries', ['user_id' => $this->user->id, 'name' => 'Phở bò', 'meal' => 'breakfast', 'eaten_at' => '2026-10-23 00:30:00']);
+
+        $copy()->assertConflict(); // the 23rd is no longer empty
+        $this->actingAs($this->user)->postJson('/api/v1/food-entries/copy', ['from' => '2026-10-19', 'to' => '2026-10-20'])->assertStatus(422); // nothing to copy
+    }
+
     public function test_users_cannot_touch_each_others_entries(): void
     {
         $other = FoodEntry::factory()->create();

@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { ChevronLeft, ChevronRight, Info, Plus, Salad, Trash2 } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Copy, Info, Plus, Salad, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { FormError } from '@/components/shared/form-fields'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
-import { dayQuery, goalLabels, mealLabels, profileQuery, useDeleteEntry, type Meal } from '@/features/nutrition/api'
+import { dayQuery, goalLabels, mealLabels, profileQuery, useCopyDay, useDeleteEntry, type Meal } from '@/features/nutrition/api'
 import { EntrySheet } from '@/features/nutrition/EntrySheet'
 import { ProfileSheet } from '@/features/nutrition/ProfileSheet'
 import { useOnlineStatus } from '@/hooks/use-online-status'
@@ -28,6 +28,15 @@ export function NutritionPage() {
   const profile = useQuery(profileQuery)
   const day = useQuery(dayQuery(date))
   const remove = useDeleteEntry()
+  const copyDay = useCopyDay()
+  const copyPreviousDay = () => {
+    const previous = fromDateKey(date)
+    previous.setDate(previous.getDate() - 1)
+    copyDay.mutate(
+      { from: dateKey(previous), to: date },
+      { onSuccess: (copied) => toast.success(`Đã chép ${copied} món`), onError: (err) => toast.error(err.message) },
+    )
+  }
   const [profileOpen, setProfileOpen] = useState(false)
   const [addingTo, setAddingTo] = useState<Meal>()
 
@@ -77,7 +86,15 @@ export function NutritionPage() {
         </section>
       )}
 
-      {day.isError && !day.data && <FormError message={online ? day.error.message : 'Bạn đang offline và chưa có dữ liệu ngày này trên máy.'} />}
+      {/* Same meals as the day before, in one tap: only offered on an empty day (the server refuses otherwise). */}
+      {day.data?.data.length === 0 && (
+        <Button variant="outline" className="self-start" disabled={!online || copyDay.isPending} onClick={copyPreviousDay}>
+          <Copy />
+          Chép món của hôm trước
+        </Button>
+      )}
+
+      {day.isError && !day.data &&<FormError message={online ? day.error.message : 'Bạn đang offline và chưa có dữ liệu ngày này trên máy.'} />}
 
       {meals.map((meal) => {
         const entries = day.data?.data.filter((e) => e.meal === meal) ?? []

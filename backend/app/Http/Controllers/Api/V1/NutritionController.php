@@ -8,7 +8,9 @@ use App\Http\Requests\Nutrition\FoodEntryRequest;
 use App\Models\Food;
 use App\Models\FoodEntry;
 use App\Models\NutritionProfile;
+use App\Models\User;
 use App\Services\Nutrition\NutritionTargets;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -54,14 +56,8 @@ class NutritionController extends Controller
     public function entries(Request $request): JsonResponse
     {
         $user = $request->user();
-        $timezone = $user->settings?->timezone ?? config('app.timezone');
-        $date = $request->validate(['date' => ['sometimes', 'date_format:Y-m-d']])['date'] ?? now($timezone)->toDateString();
-        $day = Carbon::createFromFormat('Y-m-d', $date, $timezone)->startOfDay();
-
-        $entries = $user->foodEntries()
-            ->whereBetween('eaten_at', [$day->copy()->utc(), $day->copy()->endOfDay()->utc()])
-            ->orderBy('eaten_at')
-            ->get();
+        $date = $request->validate(['date' => ['sometimes', 'date_format:Y-m-d']])['date'] ?? now($this->timezone($request))->toDateString();
+        $entries = $this->dayEntries($request, $date)->orderBy('eaten_at')->get();
 
         $total = fn (string $field) => round($entries->sum($field), 1);
 
@@ -82,12 +78,56 @@ class NutritionController extends Controller
         return response()->json(['data' => $this->entryData($entry)], 201);
     }
 
+    /**
+     * POST /food-entries/copy {from, to} — log a day's meals again (same dishes, meals and times of day).
+     * Only into an empty day, so a double tap can't log everything twice.
+     */
+    public function copyDay(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'from' => ['required', 'date_format:Y-m-d'],
+            'to' => ['required', 'date_format:Y-m-d', 'different:from'],
+        ]);
+
+        abort_if($this->dayEntries($request, $data['to'])->exists(), 409, 'Ngày này đã có món, không chép đè.');
+
+        $timezone = $this->timezone($request);
+        $days = (int) Carbon::parse($data['from'])->diffInDays(Carbon::parse($data['to']), false);
+        // Shift by calendar days in the user's timezone, so 07:30 stays 07:30 locally.
+        $copies = $this->dayEntries($request, $data['from'])->get()->map(fn (FoodEntry $e) => [
+            ...$e->only(['meal', 'food_id', 'name', 'grams', 'kcal', 'protein_g', 'carbs_g', 'fat_g', 'source']),
+            'eaten_at' => $e->eaten_at->copy()->setTimezone($timezone)->addDays($days)->utc(),
+        ]);
+        abort_if($copies->isEmpty(), 422, 'Ngày nguồn chưa có món nào.');
+
+        $request->user()->foodEntries()->createMany($copies);
+
+        return response()->json(['data' => ['copied' => $copies->count()]], 201);
+    }
+
     public function destroyEntry(FoodEntry $entry): Response
     {
         Gate::authorize('delete', $entry);
         $entry->delete();
 
         return response()->noContent();
+    }
+
+    private function timezone(Request $request): string
+    {
+        return $request->user()->settings?->timezone ?? config('app.timezone');
+    }
+
+    /**
+     * The user's entries on one calendar day of their timezone.
+     *
+     * @return HasMany<FoodEntry, User>
+     */
+    private function dayEntries(Request $request, string $date): HasMany
+    {
+        $day = Carbon::createFromFormat('Y-m-d', $date, $this->timezone($request))->startOfDay();
+
+        return $request->user()->foodEntries()->whereBetween('eaten_at', [$day->copy()->utc(), $day->copy()->endOfDay()->utc()]);
     }
 
     /**

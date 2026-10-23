@@ -58,7 +58,11 @@ function useNutritionMutation<TInput>(mutationFn: (input: TInput) => Promise<unk
 
 export const useSaveProfile = () => useNutritionMutation((input: ProfileInput) => api('/nutrition/profile', { method: 'PUT', body: input }))
 export const useAddEntry = () => useNutritionMutation((input: EntryInput) => api('/food-entries', { method: 'POST', body: input }))
-export const useDeleteEntry = () => useNutritionMutation((id: number) => api(`/food-entries/${id}`, { method: 'DELETE' }))
+export const useCopyDay = () =>
+  useNutritionMutation((days: { from: string; to: string }) =>
+    api<{ data: { copied: number } }>('/food-entries/copy', { method: 'POST', body: days }).then((r) => r.data.copied),
+  )
+export const useDeleteEntry =() => useNutritionMutation((id: number) => api(`/food-entries/${id}`, { method: 'DELETE' }))
 
 /** Same scaling the server applies, for the live preview while picking grams. */
 export const scaleFood = (food: Food, grams: number): Macros => {
