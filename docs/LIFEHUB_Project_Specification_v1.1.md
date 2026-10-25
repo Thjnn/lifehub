@@ -441,33 +441,33 @@ lifehub/
 ## 14. Tiêu chí nghiệm thu MVP
 
 ### Core
-- [ ] `docker compose up` dựng được backend + Postgres local; README hướng dẫn đầy đủ.
-- [ ] Đăng ký, đăng nhập, đăng xuất, quên mật khẩu hoạt động.
-- [ ] Dashboard hiển thị dữ liệu thật theo user.
-- [ ] Có loading, empty, error, offline states.
+- [x] `docker compose up` dựng được backend + Postgres local; README hướng dẫn đầy đủ.
+- [x] Đăng ký, đăng nhập, đăng xuất, quên mật khẩu hoạt động.
+- [x] Dashboard hiển thị dữ liệu thật theo user.
+- [x] Có loading, empty, error, offline states.
 
 ### PWA & Offline
 - [ ] Lighthouse PWA installable đạt; cài được trên Android/desktop Chrome; có hướng dẫn iOS.
 - [ ] Tắt mạng: app vẫn mở, hiển thị dữ liệu lần cuối kèm thời điểm.
 - [ ] Tắt mạng: tạo task và giao dịch được; bật mạng: tự đồng bộ, **không tạo trùng** khi gửi lại.
-- [ ] Logout xóa sạch cache offline.
+- [x] Logout xóa sạch cache offline.
 
 ### Finance
-- [ ] Số dư đúng với income/expense/transfer.
-- [ ] Transfer không tính vào chi tiêu.
-- [ ] Báo cáo tháng/danh mục đúng.
-- [ ] Không xem/sửa được dữ liệu của user khác (có test).
+- [x] Số dư đúng với income/expense/transfer.
+- [x] Transfer không tính vào chi tiêu.
+- [x] Báo cáo tháng/danh mục đúng.
+- [x] Không xem/sửa được dữ liệu của user khác (có test).
 
 ### AI
-- [ ] Gemini chỉ gọi từ backend; key không có trong frontend/repo.
-- [ ] AI không tự thay đổi dữ liệu khi chưa xác nhận.
-- [ ] Có rate limit và xử lý lỗi/timeout provider.
+- [x] Gemini chỉ gọi từ backend; key không có trong frontend/repo.
+- [x] AI không tự thay đổi dữ liệu khi chưa xác nhận.
+- [x] Có rate limit và xử lý lỗi/timeout provider.
 
 ### Release
-- [ ] Deploy thành công trên Vercel + Render + Supabase, chi phí 0đ.
-- [ ] CI chạy test/lint trên mỗi push.
-- [ ] Không commit secret; có `.env.example`.
-- [ ] Có workflow backup database.
+- [x] Deploy thành công trên Vercel + Render + Supabase, chi phí 0đ.
+- [x] CI chạy test/lint trên mỗi push.
+- [x] Không commit secret; có `.env.example`.
+- [x] Có workflow backup database.
 
 ---
 

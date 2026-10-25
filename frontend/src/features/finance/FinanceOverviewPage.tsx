@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import { ArrowRight, Plus } from 'lucide-react'
 import { Link } from 'react-router'
+import { FormError } from '@/components/shared/form-fields'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { accountsQuery, budgetsQuery, categoriesQuery, debtsDueQuery, reportQuery, transactionsQuery } from '@/features/finance/api'
@@ -38,11 +39,14 @@ export function FinanceOverviewPage() {
   const latest = recent.data?.pages[0]?.data.slice(0, 5) ?? []
   const category = (id: number | null) => categories.data?.find((c) => c.id === id)
   const unpaid = (dues.data ?? []).filter((d) => !d.paid)
+  // A failed load must not read as "0 ₫" or "no budgets yet": say it failed instead.
+  const failed = [accounts, report, budgets, recent].find((q) => q.isError && !q.data)
 
   return (
     <div className="flex flex-col gap-4">
+      {failed && <FormError message={online ? failed.error?.message : 'Bạn đang offline và chưa có dữ liệu tài chính này trên máy.'} />}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        {accounts.isPending ? <Skeleton className="h-24" /> : <StatTile label="Tổng số dư" value={balance} />}
+        {accounts.isPending ? <Skeleton className="h-24" /> : accounts.data && <StatTile label="Tổng số dư" value={balance} />}
         {report.isPending ? (
           <>
             <Skeleton className="h-24" />
@@ -94,7 +98,7 @@ export function FinanceOverviewPage() {
           <SectionHeader title="Ngân sách cần chú ý" to="/app/finance/budgets" />
           {budgets.isPending ? (
             <Skeleton className="h-12" />
-          ) : attention.length > 0 ? (
+          ) : !budgets.data ? null : attention.length > 0 ? (
             attention.map((b) => (
               <BudgetMeter key={b.id} budget={b} label={b.category_id === null ? 'Tổng chi tiêu' : (category(b.category_id)?.name ?? 'Danh mục')} />
             ))
@@ -109,7 +113,7 @@ export function FinanceOverviewPage() {
           <SectionHeader title="Giao dịch gần đây" to="/app/finance/transactions" />
           {recent.isPending ? (
             <Skeleton className="h-24" />
-          ) : latest.length === 0 ? (
+          ) : !recent.data ? null : latest.length === 0 ? (
             <div className="flex flex-col items-start gap-2 text-sm text-muted-foreground">
               Chưa có giao dịch trong tháng này.
               {online && (
