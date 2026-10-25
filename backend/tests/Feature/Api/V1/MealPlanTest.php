@@ -5,6 +5,7 @@ namespace Tests\Feature\Api\V1;
 use App\Models\Account;
 use App\Models\Category;
 use App\Models\Food;
+use App\Models\FoodEntry;
 use App\Models\MealPlanItem;
 use App\Models\Transaction;
 use App\Models\User;
@@ -99,10 +100,10 @@ class MealPlanTest extends TestCase
     public function test_needs_a_profile_and_is_limited_per_day(): void
     {
         $lunch = [['day' => 0, 'meal' => 'lunch', 'food_id' => $this->pho, 'grams' => 500, 'cost' => 45000]];
-        $this->fakeGemini($lunch, $lunch, $lunch);
+        $this->fakeGemini(...array_fill(0, 10, $lunch));
 
         $this->generate(User::factory()->create())->assertStatus(422);
-        foreach (range(1, 3) as $i) {
+        foreach (range(1, 10) as $i) {
             $this->generate()->assertOk();
         }
         $this->generate()->assertStatus(429);
@@ -118,6 +119,74 @@ class MealPlanTest extends TestCase
         // 2,400,000 left over 10 days (22nd–31st) → 1,680,000 for 7 days
         $this->generate()->assertOk()->assertJsonPath('data.payload.budget_vnd', '1680000.00');
         Http::assertSent(fn (HttpRequest $r) => str_contains(data_get($r->data(), 'contents.0.parts.0.text'), 'không vượt quá 1680000.00 VND'));
+    }
+
+    public function test_the_prompt_carries_saved_preferences_and_habits_from_the_log(): void
+    {
+        $this->actingAs($this->user)->putJson('/api/v1/nutrition/profile', [
+            'goal' => 'maintain', 'sex' => 'male', 'birth_year' => 2001, 'weight_kg' => 70, 'height_cm' => 175, 'workouts_per_week' => 4,
+            'food_preferences' => 'Dị ứng tôm. Không ăn nội tạng.',
+        ])->assertOk()->assertJsonPath('data.food_preferences', 'Dị ứng tôm. Không ăn nội tạng.');
+        // 3 logged days; one entry from 40 days ago is outside the 28-day window.
+        foreach (['2026-10-20 05:00', '2026-10-21 05:00', '2026-10-21 12:00', '2026-10-22 01:00', '2026-09-12 05:00'] as $at) {
+            FoodEntry::factory()->for($this->user)->create(['eaten_at' => $at, 'name' => str_starts_with($at, '2026-10-21 12') ? 'Bún chả' : 'Cơm gà']);
+        }
+        $this->fakeGemini([['day' => 0, 'meal' => 'lunch', 'food_id' => $this->pho, 'grams' => 500, 'cost' => 45000]]);
+
+        $this->generate()->assertOk();
+
+        Http::assertSent(function (HttpRequest $r) {
+            $prompt = data_get($r->data(), 'contents.0.parts.0.text');
+
+            return str_contains($prompt, 'Dị ứng tôm. Không ăn nội tạng.')
+                && str_contains($prompt, '3 ngày có ghi trong 28 ngày qua; trung bình 800 kcal, 40 g protein')
+                && str_contains($prompt, 'Món ăn nhiều nhất: Cơm gà ×3, Bún chả ×1.');
+        });
+    }
+
+    public function test_too_little_log_means_no_habits_in_the_prompt(): void
+    {
+        FoodEntry::factory()->for($this->user)->create(['eaten_at' => '2026-10-21 05:00']);
+        $this->fakeGemini([['day' => 0, 'meal' => 'lunch', 'food_id' => $this->pho, 'grams' => 500, 'cost' => 45000]]);
+
+        $this->generate()->assertOk();
+
+        Http::assertSent(fn (HttpRequest $r) => ! str_contains(data_get($r->data(), 'contents.0.parts.0.text'), 'Thói quen'));
+    }
+
+    public function test_chatting_revises_the_proposal_and_remembers_every_request(): void
+    {
+        $rice = Food::where('name', 'Cơm trắng')->value('id');
+        $this->fakeGemini(
+            [['day' => 0, 'meal' => 'lunch', 'food_id' => $this->pho, 'grams' => 500, 'cost' => 45000]],
+            [['day' => 0, 'meal' => 'lunch', 'food_id' => $rice, 'grams' => 200, 'cost' => 10000]],
+            [['day' => 1, 'meal' => 'lunch', 'food_id' => $rice, 'grams' => 200, 'cost' => 10000]],
+        );
+        $first = $this->generate()->assertOk()->json('data');
+
+        $revise = fn (int $id, string $feedback) => $this->actingAs($this->user)
+            ->postJson('/api/v1/ai/meal-plan', ['week_start' => '2026-11-30', 'proposal_id' => $id, 'feedback' => $feedback]);
+        $second = $revise($first['id'], 'bớt phở')->assertOk()
+            ->assertJsonPath('data.payload.week_start', '2026-10-19') // the proposal's week, not the one sent
+            ->assertJsonPath('data.payload.items.0.food_id', $rice)
+            ->assertJsonPath('data.payload.history.1', ['role' => 'user', 'text' => 'bớt phở'])
+            ->json('data');
+        $revise($second['id'], 'sáng ăn nhẹ')->assertOk()->assertJsonCount(5, 'data.payload.history');
+
+        Http::assertSent(fn (HttpRequest $r) => str_contains($text = data_get($r->data(), 'contents.0.parts.0.text'), "0|lunch|{$rice}|Cơm trắng|200")
+            && str_contains($text, "- bớt phở\n- sáng ăn nhẹ"));
+        // Only the newest proposal can be confirmed or revised.
+        $this->actingAs($this->user)->postJson("/api/v1/ai/proposals/{$first['id']}/confirm")->assertConflict();
+        $revise($first['id'], 'nữa')->assertConflict();
+    }
+
+    public function test_cannot_revise_someone_elses_proposal_or_without_a_message(): void
+    {
+        $this->fakeGemini([['day' => 0, 'meal' => 'lunch', 'food_id' => $this->pho, 'grams' => 500, 'cost' => 45000]]);
+        $id = $this->generate()->assertOk()->json('data.id');
+
+        $this->actingAs(User::factory()->create())->postJson('/api/v1/ai/meal-plan', ['week_start' => '2026-10-19', 'proposal_id' => $id, 'feedback' => 'x'])->assertNotFound();
+        $this->actingAs($this->user)->postJson('/api/v1/ai/meal-plan', ['week_start' => '2026-10-19', 'proposal_id' => $id])->assertUnprocessable();
     }
 
     public function test_eaten_logs_the_table_numbers_once_and_deleting_the_entry_undoes_it(): void
@@ -188,6 +257,7 @@ class MealPlanTest extends TestCase
 
     public function test_coach_reads_targets_meals_and_plan(): void
     {
+        $this->user->nutritionProfile->update(['food_preferences' => 'Dị ứng tôm']);
         $item = $this->planItem();
         $this->actingAs($this->user)->postJson("/api/v1/meal-plan-items/{$item->id}/eat")->assertCreated();
         Http::fake(['generativelanguage.googleapis.com/*' => Http::sequence()
@@ -202,6 +272,7 @@ class MealPlanTest extends TestCase
 
             return $response !== null
                 && $response['targets']['kcal'] === 2590
+                && $response['food_preferences'] === 'Dị ứng tôm'
                 && $response['days'][0] === ['date' => '2026-10-22', 'eaten_kcal' => 450, 'eaten_protein_g' => 25.0, 'planned' => [
                     ['meal' => 'breakfast', 'dish' => 'Phở bò', 'grams' => 500, 'eaten' => true],
                 ]]

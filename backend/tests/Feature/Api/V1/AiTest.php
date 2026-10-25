@@ -7,6 +7,7 @@ use App\Models\AiActionProposal;
 use App\Models\Category;
 use App\Models\Event;
 use App\Models\User;
+use App\Services\Ai\Coach;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request as HttpRequest;
 use Illuminate\Support\Facades\Http;
@@ -76,6 +77,49 @@ class AiTest extends TestCase
                 && $request->hasHeader('x-goog-api-key', 'test-key');
         });
         $this->assertDatabaseCount('ai_messages', 2);
+    }
+
+    public function test_page_assistant_sends_that_pages_data_for_its_month_but_stores_only_the_question(): void
+    {
+        $cash = Account::factory()->for($this->user)->create();
+        $food = Category::whereNull('user_id')->where('name', 'Ăn uống')->value('id');
+        foreach (['2026-09-10T12:00:00+07:00' => '50000', '2026-10-21T12:00:00+07:00' => '70000'] as $at => $amount) {
+            $this->actingAs($this->user)->putJson('/api/v1/transactions/'.Str::uuid(), [
+                'type' => 'expense', 'account_id' => $cash->id, 'category_id' => $food, 'amount' => $amount, 'occurred_at' => $at, 'description' => null,
+            ])->assertCreated();
+        }
+        Http::fake(['generativelanguage.googleapis.com/*' => Http::response(self::text('Tháng 9 bạn tiêu 50.000 ₫.'))]);
+
+        $this->actingAs($this->user)->postJson('/api/v1/ai/chat', ['message' => 'Tháng này mình tiêu nhiều nhất vào đâu?', 'page' => 'finance.reports', 'month' => '2026-09'])
+            ->assertOk();
+
+        // One Gemini call: the page's data (September only) came with the question, no tool round needed.
+        Http::assertSentCount(1);
+        Http::assertSent(function (HttpRequest $r) {
+            $text = data_get($r->data(), 'contents.0.parts.0.text');
+
+            return str_contains($text, 'trang "Tài chính · Báo cáo" của LIFEHUB, tháng 2026-09')
+                && str_contains($text, '"expense_vnd":"50000.00"')
+                && str_ends_with($text, "[Câu hỏi:]\nTháng này mình tiêu nhiều nhất vào đâu?");
+        });
+        $this->assertDatabaseHas('ai_messages', ['role' => 'user', 'content' => 'Tháng này mình tiêu nhiều nhất vào đâu?']);
+    }
+
+    public function test_page_assistant_only_accepts_known_pages_and_dates(): void
+    {
+        foreach ([['page' => 'settings'], ['page' => 'nutrition', 'date' => '22/10/2026'], ['page' => 'finance', 'month' => '2026-13']] as $bad) {
+            $this->actingAs($this->user)->postJson('/api/v1/ai/chat', ['message' => 'Hi'] + $bad)->assertUnprocessable();
+        }
+    }
+
+    public function test_every_page_has_its_context(): void
+    {
+        Http::fake(['generativelanguage.googleapis.com/*' => Http::response(self::text('Ok'))]);
+
+        foreach (array_keys(Coach::PAGES) as $page) {
+            $this->actingAs($this->user)->postJson('/api/v1/ai/chat', ['message' => 'Gợi ý?', 'page' => $page, 'date' => '2026-10-22'])->assertOk();
+        }
+        Http::assertSent(fn (HttpRequest $r) => str_contains(data_get($r->data(), 'contents.0.parts.0.text'), 'tuần bắt đầu 2026-10-19'));
     }
 
     public function test_free_time_skips_events(): void

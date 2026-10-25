@@ -2,7 +2,9 @@ import { Controller, useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { z } from 'zod'
 import { FormError, SelectField, SubmitButton, TextField } from '@/components/shared/form-fields'
+import { Field, FieldDescription, FieldError, FieldLabel } from '@/components/ui/field'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
+import { Textarea } from '@/components/ui/textarea'
 import { goalLabels, useSaveProfile, type NutritionProfile } from '@/features/nutrition/api'
 import { useIsDesktop } from '@/hooks/use-media-query'
 import { applyServerErrors, zodResolver } from '@/lib/form'
@@ -15,6 +17,7 @@ const schema = z.object({
   weight_kg: z.number({ error: 'Nhập cân nặng' }).min(20, 'Từ 20 kg').max(300, 'Tối đa 300 kg'),
   height_cm: z.number({ error: 'Nhập chiều cao' }).int().min(100, 'Từ 100 cm').max(250, 'Tối đa 250 cm'),
   workouts_per_week: z.number({ error: 'Nhập số buổi' }).int().min(0).max(14, 'Tối đa 14'),
+  food_preferences: z.string().max(500, 'Tối đa 500 ký tự'),
 })
 
 const goalOptions = (Object.keys(goalLabels) as (keyof typeof goalLabels)[]).map((value) => ({ value, label: goalLabels[value] }))
@@ -49,7 +52,7 @@ function ProfileForm({ profile, onDone }: { profile: NutritionProfile | null; on
     formState: { errors, isSubmitting },
   } = useForm({
     resolver: zodResolver(schema),
-    defaultValues: profile ?? { goal: 'maintain', sex: 'male', workouts_per_week: 3 },
+    defaultValues: profile ? { ...profile, food_preferences: profile.food_preferences ?? '' } : { goal: 'maintain', sex: 'male', workouts_per_week: 3, food_preferences: '' },
   })
 
   const onSubmit = handleSubmit(async (values) => {
@@ -75,6 +78,19 @@ function ProfileForm({ profile, onDone }: { profile: NutritionProfile | null; on
         <TextField label="Chiều cao (cm)" type="number" inputMode="numeric" error={errors.height_cm?.message} {...register('height_cm', number)} />
         <TextField label="Buổi tập / tuần" type="number" inputMode="numeric" error={errors.workouts_per_week?.message} {...register('workouts_per_week', number)} />
       </div>
+      <Field data-invalid={!!errors.food_preferences}>
+        <FieldLabel htmlFor="food-preferences">Sở thích ăn uống</FieldLabel>
+        <Textarea
+          id="food-preferences"
+          rows={3}
+          maxLength={500}
+          placeholder="Vd. dị ứng tôm, không ăn nội tạng, thích cá, sáng ăn nhẹ"
+          aria-invalid={!!errors.food_preferences}
+          {...register('food_preferences')}
+        />
+        <FieldDescription>AI luôn tôn trọng điều này mỗi lần lên thực đơn tuần.</FieldDescription>
+        <FieldError>{errors.food_preferences?.message}</FieldError>
+      </Field>
       <SubmitButton pending={isSubmitting}>Lưu và tính mục tiêu</SubmitButton>
     </form>
   )

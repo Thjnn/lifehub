@@ -16,6 +16,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 /**
  * AI Coach endpoints (spec §9.5, §11). Online only; per-user daily limits keep us inside the free Gemini quota.
@@ -26,7 +27,7 @@ class AiController extends Controller
 
     private const REFRESH_PER_DAY = 3;
 
-    private const MEAL_PLAN_PER_DAY = 3;
+    private const MEAL_PLAN_PER_DAY = 10; // creating and each chat revision both count
 
     private const FOOD_SCAN_PER_DAY = 10;
 
@@ -48,13 +49,26 @@ class AiController extends Controller
         return response()->json(['data' => $this->scanner->scan($info['mime'], $base64)]);
     }
 
-    // POST /ai/meal-plan {week_start} — a week of meals as a proposal; nothing is saved until confirmed
+    // POST /ai/meal-plan {week_start, proposal_id?, feedback?} — a week of meals as a proposal (or a revision of one
+    // from the user's chat message); nothing is saved until confirmed
     public function mealPlan(Request $request): JsonResponse
     {
-        $week = $request->validate(['week_start' => ['required', 'date_format:Y-m-d']])['week_start'];
-        $this->limit("ai-meal-plan:{$request->user()->id}", self::MEAL_PLAN_PER_DAY, 'Bạn đã tạo thực đơn '.self::MEAL_PLAN_PER_DAY.' lần trong 24 giờ. Hẹn bạn ngày mai nhé!');
+        $data = $request->validate([
+            'week_start' => ['required', 'date_format:Y-m-d'],
+            'proposal_id' => ['nullable', 'integer'],
+            'feedback' => ['required_with:proposal_id', 'nullable', 'string', 'max:500'],
+        ]);
+        // Revising: the pending meal plan proposal being chatted about (the user's own) and its week.
+        $previous = null;
+        $week = Carbon::parse($data['week_start'])->startOfWeek(Carbon::MONDAY);
+        if (isset($data['proposal_id'])) {
+            $previous = AiActionProposal::where('user_id', $request->user()->id)->where('action_type', 'create_meal_plan')->findOrFail($data['proposal_id']);
+            $this->authorizeProposal($request, $previous);
+            $week = Carbon::parse($previous->payload['week_start']);
+        }
+        $this->limit("ai-meal-plan:{$request->user()->id}", self::MEAL_PLAN_PER_DAY, 'Bạn đã tạo/chỉnh thực đơn '.self::MEAL_PLAN_PER_DAY.' lần trong 24 giờ. Hẹn bạn ngày mai nhé!');
 
-        return response()->json(['data' => $this->presentProposal($this->planner->propose($request->user(), Carbon::parse($week)->startOfWeek(Carbon::MONDAY)))]);
+        return response()->json(['data' => $this->presentProposal($this->planner->propose($request->user(), $week, $previous, $previous ? trim($data['feedback']) : null))]);
     }
 
     // GET /ai/briefing — today's briefing, generated on the first request of the day
@@ -71,12 +85,16 @@ class AiController extends Controller
         return $this->presentBriefing($this->coach->briefing($request->user(), refresh: true));
     }
 
-    // POST /ai/chat {message, conversation_id?}
+    // POST /ai/chat {message, conversation_id?, page?, month?, date?} — page = the floating assistant's page; the server
+    // adds that page's data for the month/day it shows
     public function chat(Request $request): JsonResponse
     {
         $data = $request->validate([
             'message' => ['required', 'string', 'max:1000'],
             'conversation_id' => ['nullable', 'integer'],
+            'page' => ['nullable', Rule::in(array_keys(Coach::PAGES))],
+            'month' => ['nullable', 'date_format:Y-m'],
+            'date' => ['nullable', 'date_format:Y-m-d'],
         ]);
         $user = $request->user();
         $this->limit("ai-chat:{$user->id}", self::CHAT_PER_DAY, 'Bạn đã dùng hết '.self::CHAT_PER_DAY.' câu hỏi trong 24 giờ. Hẹn bạn ngày mai nhé!');
@@ -85,7 +103,7 @@ class AiController extends Controller
             ? AiConversation::where('user_id', $user->id)->findOrFail($data['conversation_id'])
             : $this->newConversation($user->id, $data['message']);
 
-        $reply = $this->coach->chat($user, $conversation, $data['message']);
+        $reply = $this->coach->chat($user, $conversation, $data['message'], $data['page'] ?? null, $data['month'] ?? null, $data['date'] ?? null);
 
         return response()->json(['data' => [
             'conversation_id' => $conversation->id,

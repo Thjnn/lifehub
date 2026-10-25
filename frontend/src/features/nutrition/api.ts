@@ -13,6 +13,7 @@ export type NutritionProfile = {
   weight_kg: number
   height_cm: number
   workouts_per_week: number
+  food_preferences: string | null
   targets: Targets
 }
 export type ProfileInput = Omit<NutritionProfile, 'targets'>
@@ -53,9 +54,10 @@ export type PlanItem = Macros & {
   food_entry_id: number | null
 }
 export type ProposedItem = Omit<PlanItem, 'id' | 'food_entry_id'>
+export type PlanChatMessage = { role: 'user' | 'ai'; text: string }
 export type MealPlanProposal = {
   id: number
-  payload: { week_start: string; budget_vnd: string | null; total_cost_vnd: string; items: ProposedItem[] }
+  payload: { week_start: string; budget_vnd: string | null; total_cost_vnd: string; items: ProposedItem[]; history?: PlanChatMessage[] }
 }
 
 type DayResponse = { data: FoodEntry[]; meta: { date: string; totals: Macros; targets: Targets | null; plan?: PlanItem[] } }
@@ -95,8 +97,9 @@ export const mondayOf = (key: string) => {
 // AI only proposes: nothing is saved until the proposal is confirmed (spec §15.4).
 export const useGenerateMealPlan = () =>
   useMutation({
-    mutationFn: (weekStart: string) =>
-      api<{ data: MealPlanProposal }>('/ai/meal-plan', { method: 'POST', body: { week_start: weekStart } }).then((r) => r.data),
+    // With proposal_id + feedback the AI revises that proposal instead of starting over.
+    mutationFn: (input: { week_start: string; proposal_id?: number; feedback?: string }) =>
+      api<{ data: MealPlanProposal }>('/ai/meal-plan', { method: 'POST', body: input }).then((r) => r.data),
   })
 
 // Nothing is saved by a scan: the user reviews the plate, then logs it as one entry with useAddEntry.

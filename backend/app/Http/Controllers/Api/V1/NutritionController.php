@@ -39,6 +39,7 @@ class NutritionController extends Controller
             'weight_kg' => ['required', 'numeric', 'between:20,300'],
             'height_cm' => ['required', 'integer', 'between:100,250'],
             'workouts_per_week' => ['required', 'integer', 'between:0,14'],
+            'food_preferences' => ['nullable', 'string', 'max:500'],
         ]);
 
         $profile = $request->user()->nutritionProfile()->updateOrCreate([], $data);
@@ -191,6 +192,6 @@ class NutritionController extends Controller
      */
     private function profileData(?NutritionProfile $p): ?array
     {
-        return $p ? $p->only(['goal', 'sex', 'birth_year', 'weight_kg', 'height_cm', 'workouts_per_week']) + ['targets' => NutritionTargets::for($p, now()->year)] : null;
+        return $p ? $p->only(['goal', 'sex', 'birth_year', 'weight_kg', 'height_cm', 'workouts_per_week', 'food_preferences']) + ['targets' => NutritionTargets::for($p, now()->year)] : null;
     }
 }

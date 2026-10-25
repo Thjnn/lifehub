@@ -501,6 +501,40 @@
                                             "integer",
                                             "null"
                                         ]
+                                    },
+                                    "page": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "enum": [
+                                            "dashboard",
+                                            "tasks",
+                                            "calendar",
+                                            "finance",
+                                            "finance.transactions",
+                                            "finance.accounts",
+                                            "finance.budgets",
+                                            "finance.reports",
+                                            "nutrition",
+                                            "nutrition.plan",
+                                            "nutrition.workouts",
+                                            "nutrition.body",
+                                            null
+                                        ]
+                                    },
+                                    "month": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ]
+                                    },
+                                    "date": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "format": "date"
                                     }
                                 },
                                 "required": [
@@ -640,6 +674,19 @@
                                     "week_start": {
                                         "type": "string",
                                         "format": "date"
+                                    },
+                                    "proposal_id": {
+                                        "type": [
+                                            "integer",
+                                            "null"
+                                        ]
+                                    },
+                                    "feedback": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "maxLength": 500
                                     }
                                 },
                                 "required": [
@@ -3766,6 +3813,13 @@
                                         "type": "integer",
                                         "minimum": 0,
                                         "maximum": 14
+                                    },
+                                    "food_preferences": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "maxLength": 500
                                     }
                                 },
                                 "required": [

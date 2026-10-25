@@ -47,7 +47,8 @@ export function useRefreshBriefing() {
 
 export function useSendMessage() {
   return useMutation({
-    mutationFn: async (input: { message: string; conversation_id?: number }) =>
+    // page/month/date: asked from a page's floating assistant (features/ai/page-context.ts)
+    mutationFn: async (input: { message: string; conversation_id?: number; page?: string; month?: string; date?: string }) =>
       (
         await api<{ data: { conversation_id: number; reply: string; proposals: Proposal[]; remaining_today: number } }>('/ai/chat', {
           method: 'POST',

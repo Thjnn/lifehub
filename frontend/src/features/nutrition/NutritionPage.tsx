@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Check, ChevronLeft, ChevronRight, Copy, Info, Plus, Salad, Trash2 } from 'lucide-react'
+import { useSearchParams } from 'react-router'
 import { toast } from 'sonner'
 import { FormError } from '@/components/shared/form-fields'
 import { Button } from '@/components/ui/button'
@@ -18,11 +19,20 @@ const meals = Object.keys(mealLabels) as Meal[]
 export function NutritionPage() {
   const online = useOnlineStatus()
   const [today] = useState(() => dateKey(new Date()))
-  const [date, setDate] = useState(today)
+  // The day lives in the URL (?date=) so Back works and the page's AI assistant knows which day is shown.
+  const [params, setParams] = useSearchParams()
+  const asked = params.get('date') ?? ''
+  const date = /^\d{4}-\d{2}-\d{2}$/.test(asked) && asked <= today ? asked : today
   const shift = (days: number) => {
     const d = fromDateKey(date)
     d.setDate(d.getDate() + days)
-    setDate(dateKey(d))
+    setParams(
+      (prev) => {
+        prev.set('date', dateKey(d))
+        return prev
+      },
+      { replace: true },
+    )
   }
 
   const profile = useQuery(profileQuery)

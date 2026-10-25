@@ -21,6 +21,22 @@ class Coach
 
     private const HISTORY_MESSAGES = 10;
 
+    // Pages with a floating assistant (frontend `features/ai/page-context.ts`) and their names in the prompt.
+    public const PAGES = [
+        'dashboard' => 'Tổng quan',
+        'tasks' => 'Công việc',
+        'calendar' => 'Lịch',
+        'finance' => 'Tài chính · Tổng quan',
+        'finance.transactions' => 'Tài chính · Giao dịch',
+        'finance.accounts' => 'Tài chính · Tài khoản',
+        'finance.budgets' => 'Tài chính · Ngân sách',
+        'finance.reports' => 'Tài chính · Báo cáo',
+        'nutrition' => 'Dinh dưỡng · Nhật ký',
+        'nutrition.plan' => 'Dinh dưỡng · Thực đơn tuần',
+        'nutrition.workouts' => 'Dinh dưỡng · Tập luyện',
+        'nutrition.body' => 'Dinh dưỡng · Cân nặng',
+    ];
+
     public function __construct(
         private Gemini $gemini,
         private EventOccurrences $events,
@@ -32,15 +48,17 @@ class Coach
     /**
      * @return array{content: string, proposal_ids: list<int>}
      */
-    public function chat(User $user, AiConversation $conversation, string $message): array
+    public function chat(User $user, AiConversation $conversation, string $message, ?string $page = null, ?string $month = null, ?string $date = null): array
     {
         $tools = $this->tools($user, $conversation->id);
 
-        // Recent turns as context (text only), then the new question.
+        // Recent turns as context (text only), then the new question. Asked from a page's assistant, the question
+        // carries that page's data, fetched here from the database (never sent by the client). Only the plain
+        // question is stored.
         $contents = $conversation->messages()->latest('id')->limit(self::HISTORY_MESSAGES)->get()->reverse()
             ->map(fn ($m) => ['role' => $m->role === 'assistant' ? 'model' : 'user', 'parts' => [['text' => $m->content]]])
             ->values()->all();
-        $contents[] = ['role' => 'user', 'parts' => [['text' => $message]]];
+        $contents[] = ['role' => 'user', 'parts' => [['text' => $page ? $this->withPageContext($user, $tools, $message, $page, $month, $date) : $message]]];
 
         for ($round = 0; $round <= self::MAX_TOOL_ROUNDS; $round++) {
             $result = $this->gemini->generate($this->systemPrompt($user), $contents, AiTools::declarations());
@@ -113,6 +131,61 @@ class Coach
         return $briefing;
     }
 
+    /**
+     * The question prefixed with what the user is looking at: the page name and the data its tools return for the
+     * page's month/day/week (defaults: this month, today). Saves Gemini a tool round, and the free tier's requests.
+     */
+    private function withPageContext(User $user, AiTools $tools, string $message, string $page, ?string $month, ?string $date): string
+    {
+        $timezone = $user->settings?->timezone ?? config('app.timezone');
+        $today = Carbon::now($timezone)->toDateString();
+        $month ??= substr($today, 0, 7);
+        $date ??= $today;
+        $weekStart = Carbon::parse($date)->startOfWeek(Carbon::MONDAY);
+        $plus = fn (int $days) => Carbon::parse($date)->addDays($days)->toDateString();
+
+        $data = match ($page) {
+            'dashboard' => [
+                'today_schedule' => $tools->call('get_schedule', ['date_from' => $today, 'date_to' => $today]),
+                'overdue_tasks' => $tools->call('get_tasks', ['scope' => 'overdue']),
+                'budgets_this_month' => $tools->call('get_budgets', ['month' => $month]),
+            ],
+            'tasks' => [
+                'open_tasks' => $tools->call('get_tasks', ['scope' => 'open']),
+                'overdue_tasks' => $tools->call('get_tasks', ['scope' => 'overdue']),
+            ],
+            'calendar' => [
+                'next_7_days' => $tools->call('get_schedule', ['date_from' => $today, 'date_to' => Carbon::parse($today)->addDays(6)->toDateString()]),
+                'free_time_today' => $tools->call('get_free_time', ['date' => $today]),
+            ],
+            'finance', 'finance.reports' => [
+                'spending' => $this->monthSpending($tools, $month),
+                'budgets' => $tools->call('get_budgets', ['month' => $month]),
+            ],
+            'finance.transactions' => ['spending' => $this->monthSpending($tools, $month)],
+            'finance.accounts' => ['debt_repayments_next_30_days' => $tools->call('get_debts', ['days' => 30])],
+            'finance.budgets' => ['budgets' => $tools->call('get_budgets', ['month' => $month])],
+            'nutrition' => ['nutrition_last_7_days' => $tools->call('get_nutrition', ['date_from' => $plus(-6), 'date_to' => $date])],
+            'nutrition.plan' => ['meal_plan_week' => $tools->call('get_nutrition', ['date_from' => $weekStart->toDateString(), 'date_to' => $weekStart->copy()->addDays(6)->toDateString()])],
+            'nutrition.workouts', 'nutrition.body' => ['fitness_last_30_days' => $tools->call('get_fitness', ['days' => 30])],
+        };
+
+        return '[Người dùng đang xem trang "'.self::PAGES[$page].'" của LIFEHUB'
+            .($page === 'nutrition' ? ", ngày {$date}" : ($page === 'nutrition.plan' ? ", tuần bắt đầu {$weekStart->toDateString()}" : (str_starts_with($page, 'finance') ? ", tháng {$month}" : '')))
+            .'. Dữ liệu trên trang đó (JSON), dùng để trả lời; cần thêm thì gọi hàm:]'."\n"
+            .json_encode($data, JSON_UNESCAPED_UNICODE)."\n\n[Câu hỏi:]\n{$message}";
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function monthSpending(AiTools $tools, string $month): array
+    {
+        $start = Carbon::createFromFormat('!Y-m', $month);
+
+        return $tools->call('get_spending', ['date_from' => $start->toDateString(), 'date_to' => $start->copy()->endOfMonth()->toDateString()]);
+    }
+
     private function tools(User $user, ?int $conversationId): AiTools
     {
         return new AiTools($user, $conversationId, $this->events, $this->report, $this->debts, $this->weather);
@@ -133,6 +206,7 @@ class Coach
             - Chỉ dùng số liệu lấy từ các hàm được cung cấp. Không bịa số. Thiếu dữ liệu thì nói rõ.
             - Cần dữ liệu thì gọi hàm; "tuần này" = thứ Hai đến Chủ Nhật của tuần hiện tại.
             - Muốn thêm công việc hoặc sự kiện: gọi propose_task / propose_event, rồi nói người dùng bấm "Xác nhận". Không bao giờ nói là đã tạo.
+            - Gợi ý món ăn hoặc thực đơn: gọi get_nutrition trước để biết mục tiêu và sở thích (dị ứng, món không ăn), tuyệt đối không gợi ý món người dùng dị ứng.
             - Bạn KHÔNG thể tạo, sửa hay xoá giao dịch tài chính. Nếu được nhờ, hướng dẫn người dùng tự ghi trong mục Tài chính.
             - Không đưa lời khuyên đầu tư; không thay thế tư vấn y tế/dinh dưỡng chuyên môn.
             PROMPT;

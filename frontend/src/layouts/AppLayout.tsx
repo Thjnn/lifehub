@@ -7,6 +7,7 @@ import { SectionNav } from '@/components/shared/SectionNav'
 import { Sidebar } from '@/components/shared/Sidebar'
 import { Topbar } from '@/components/shared/Topbar'
 import { Button } from '@/components/ui/button'
+import { PageAssistant } from '@/features/ai/PageAssistant'
 import { usePageTitle } from '@/hooks/use-page-title'
 
 export function AppLayout() {
@@ -26,6 +27,7 @@ export function AppLayout() {
         <Outlet />
       </main>
       <BottomNav />
+      <PageAssistant />
       <QuickCreate
         trigger={
           <Button

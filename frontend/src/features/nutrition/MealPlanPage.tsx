@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Check, ChevronLeft, ChevronRight, Info, Plus, RotateCw, Sparkles, X } from 'lucide-react'
-import { Link } from 'react-router'
+import { BookmarkPlus, Check, ChevronLeft, ChevronRight, Info, Plus, RotateCw, SendHorizontal, Sparkles, X } from 'lucide-react'
+import { Link, useSearchParams } from 'react-router'
 import { toast } from 'sonner'
 import { FormError } from '@/components/shared/form-fields'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Textarea } from '@/components/ui/textarea'
 import {
   mealLabels,
   mealPlanQuery,
@@ -14,7 +15,9 @@ import {
   useConfirmMealPlan,
   useDeletePlanItem,
   useGenerateMealPlan,
+  useSaveProfile,
   type MealPlanProposal,
+  type NutritionProfile,
   type PlanItem,
   type ProposedItem,
   type Targets,
@@ -30,11 +33,21 @@ const mealOrder = Object.keys(mealLabels)
 // /app/nutrition/plan (spec §15.4): AI proposes a week from the dish table → user confirms → "Đã ăn" in the log.
 export function MealPlanPage() {
   const online = useOnlineStatus()
-  const [week, setWeek] = useState(() => mondayOf(dateKey(new Date())))
+  // The week (its Monday) lives in the URL (?week=) so Back works and the page's AI assistant knows which week is shown.
+  const [params, setParams] = useSearchParams()
+  const [thisWeek] = useState(() => mondayOf(dateKey(new Date())))
+  const asked = params.get('week') ?? ''
+  const week = /^\d{4}-\d{2}-\d{2}$/.test(asked) ? mondayOf(asked) : thisWeek
   const shiftWeek = (weeks: number) => {
     const d = fromDateKey(week)
     d.setDate(d.getDate() + weeks * 7)
-    setWeek(dateKey(d))
+    setParams(
+      (prev) => {
+        prev.set('week', dateKey(d))
+        return prev
+      },
+      { replace: true },
+    )
     setProposal(undefined)
   }
 
@@ -48,7 +61,7 @@ export function MealPlanPage() {
   const [today] = useState(() => dateKey(new Date()))
   const defaultDay = mondayOf(today) === week ? today : week
 
-  const askAi = () => generate.mutate(week, { onSuccess: setProposal, onError: (err) => toast.error(err.message) })
+  const askAi = () => generate.mutate({ week_start: week }, { onSuccess: setProposal, onError: (err) => toast.error(err.message) })
   const accept = () =>
     confirm.mutate(proposal!.id, {
       onSuccess: () => {
@@ -91,8 +104,9 @@ export function MealPlanPage() {
             Thực đơn AI đề xuất — chưa lưu
           </h2>
           <CostLine total={proposal.payload.total_cost_vnd} budget={proposal.payload.budget_vnd} />
+          <PlanChat proposal={proposal} week={week} profile={profile.data ?? null} revise={generate} onRevised={setProposal} />
           <div className="flex flex-wrap gap-2">
-            <Button disabled={!online || confirm.isPending} onClick={accept}>
+            <Button disabled={!online || confirm.isPending || generate.isPending} onClick={accept}>
               <Check />
               Xác nhận
             </Button>
@@ -143,8 +157,118 @@ export function MealPlanPage() {
 
       <p className="flex items-start gap-2 text-xs text-muted-foreground">
         <Info className="mt-0.5 size-3.5 shrink-0" aria-hidden />
-        Calo lấy từ bảng món ăn; giá là AI ước tính. Thông tin mục tiêu và danh sách món được gửi tới Google Gemini. Gợi ý chỉ để tham khảo, không thay tư vấn dinh dưỡng/y tế.
+        Calo lấy từ bảng món ăn; giá là AI ước tính. Mục tiêu, sở thích ăn uống, tên món và calo trong nhật ký 28 ngày gần nhất được gửi tới Google Gemini. Gợi ý chỉ để tham khảo, không thay tư vấn dinh dưỡng/y tế.
       </p>
+    </div>
+  )
+}
+
+// Chat under the proposal: each message makes the AI revise this proposal (it keeps every earlier request). A message
+// can be kept as a lasting food preference, which every future plan respects.
+function PlanChat({
+  proposal,
+  week,
+  profile,
+  revise,
+  onRevised,
+}: {
+  proposal: MealPlanProposal
+  week: string
+  profile: NutritionProfile | null
+  // The page's mutation, so "Xác nhận" and "Tạo lại" wait while the AI revises.
+  revise: ReturnType<typeof useGenerateMealPlan>
+  onRevised: (proposal: MealPlanProposal) => void
+}) {
+  const online = useOnlineStatus()
+  const saveProfile = useSaveProfile()
+  const [draft, setDraft] = useState('')
+  const history = proposal.payload.history ?? []
+
+  const send = () => {
+    const feedback = draft.trim()
+    if (!feedback || revise.isPending) return
+    revise.mutate(
+      { week_start: week, proposal_id: proposal.id, feedback },
+      {
+        onSuccess: (revised) => {
+          setDraft('')
+          onRevised(revised)
+        },
+        onError: (err) => toast.error(err.message),
+      },
+    )
+  }
+
+  const remember = (text: string) => {
+    if (!profile) return
+    const { targets: _targets, ...input } = profile
+    const current = profile.food_preferences?.trim() ?? ''
+    if (current.toLowerCase().includes(text.toLowerCase())) return toast.info('Sở thích này đã được ghi nhớ rồi.')
+    const next = current ? `${current.replace(/[.;,]$/, '')}; ${text}` : text
+    if (next.length > 500) return toast.error('Sở thích đã gần 500 ký tự, hãy rút gọn trong Hồ sơ dinh dưỡng.')
+    saveProfile.mutate(
+      { ...input, food_preferences: next },
+      { onSuccess: () => toast.success('Đã ghi nhớ, AI sẽ áp dụng cho các tuần sau'), onError: (err) => toast.error(err.message) },
+    )
+  }
+
+  return (
+    <div className="flex flex-col gap-2">
+      {history.length > 0 && (
+        <ul className="flex flex-col gap-2" aria-live="polite">
+          {history.map((message, index) => (
+            <li
+              key={index}
+              className={cn(
+                'max-w-[85%] rounded-xl px-3 py-2 text-sm motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-1',
+                message.role === 'ai' ? 'self-start bg-muted' : 'self-end bg-primary/15',
+              )}
+            >
+              {message.role === 'ai' && <Sparkles className="mr-1.5 inline size-3.5 text-primary" aria-label="AI" />}
+              {message.text}
+              {message.role === 'user' && profile && (
+                <button
+                  type="button"
+                  onClick={() => remember(message.text)}
+                  disabled={!online || saveProfile.isPending}
+                  className="mt-1 flex items-center gap-1 text-xs text-muted-foreground hover:text-primary disabled:opacity-50"
+                >
+                  <BookmarkPlus className="size-3.5" aria-hidden />
+                  Ghi nhớ cho các tuần sau
+                </button>
+              )}
+            </li>
+          ))}
+          {revise.isPending && <li className="self-start rounded-xl bg-muted px-3 py-2 text-sm text-muted-foreground motion-safe:animate-pulse">AI đang sửa thực đơn…</li>}
+        </ul>
+      )}
+      <form
+        className="flex items-end gap-2"
+        onSubmit={(e) => {
+          e.preventDefault()
+          send()
+        }}
+      >
+        <Textarea
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault()
+              send()
+            }
+          }}
+          maxLength={500}
+          rows={1}
+          disabled={!online}
+          aria-label="Yêu cầu chỉnh thực đơn"
+          placeholder={online ? 'Nói nhu cầu của bạn, vd. bớt đồ chiên, sáng ăn nhẹ…' : 'Cần có mạng để chat với AI'}
+          className="max-h-32 min-h-10 flex-1 resize-none"
+        />
+        <Button type="submit" size="icon" aria-label="Gửi" disabled={!online || !draft.trim() || revise.isPending}>
+          <SendHorizontal />
+        </Button>
+      </form>
     </div>
   )
 }

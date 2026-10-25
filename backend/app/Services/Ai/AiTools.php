@@ -72,7 +72,7 @@ class AiTools
             ['name' => 'get_debts', 'description' => 'Debt / buy-now-pay-later repayments due in the next N days (and overdue ones).', 'parameters' => ['type' => 'object', 'properties' => [
                 'days' => ['type' => 'integer', 'description' => '1 to 60'],
             ], 'required' => ['days']]],
-            ['name' => 'get_nutrition', 'description' => 'Daily calorie/protein targets, what the user ate each day, and their confirmed meal plan (which planned dishes were eaten). Max 14 days.', 'parameters' => ['type' => 'object', 'properties' => [
+            ['name' => 'get_nutrition', 'description' => 'Daily calorie/protein targets, lasting food preferences (allergies, dishes to avoid: always respect them when suggesting food), what the user ate each day, and their confirmed meal plan (which planned dishes were eaten). Max 14 days.', 'parameters' => ['type' => 'object', 'properties' => [
                 'date_from' => $date, 'date_to' => $date,
             ], 'required' => ['date_from', 'date_to']]],
             ['name' => 'get_fitness', 'description' => 'The user\'s workouts (exercises, sets, best weight) and body weight trend over the last N days.', 'parameters' => ['type' => 'object', 'properties' => [
@@ -324,6 +324,7 @@ class AiTools
 
         return [
             'targets' => $profile ? NutritionTargets::for($profile, now()->year) : 'No nutrition profile yet (the user can set one in Dinh dưỡng).',
+            'food_preferences' => $profile?->food_preferences,
             'days' => $days,
         ];
     }
