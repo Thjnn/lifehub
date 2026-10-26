@@ -93,7 +93,7 @@ export function ChatPanel({
           }}
         >
           <MessageSquarePlus />
-          Cuộc trò chuyện mới
+          <span className="max-sm:sr-only">Cuộc trò chuyện mới</span>
         </Button>
         {onClose && (
           <Button size="icon-sm" variant="ghost" aria-label="Đóng" onClick={onClose} className="ml-auto">

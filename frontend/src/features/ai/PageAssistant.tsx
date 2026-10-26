@@ -1,6 +1,5 @@
-import { useState } from 'react'
 import { Sparkles } from 'lucide-react'
-import { useLocation } from 'react-router'
+import { useLocation, useNavigate } from 'react-router'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { ChatPanel } from '@/features/ai/ChatPanel'
@@ -10,8 +9,20 @@ import { useIsDesktop } from '@/hooks/use-media-query'
 // Floating "Hỏi AI" button on pages that have a context: the chat opens with this page's data on the server side.
 // Nothing is sent until the user asks (each question = one Gemini request from the shared daily limit).
 export function PageAssistant() {
-  const { pathname, search } = useLocation()
-  const [open, setOpen] = useState(false)
+  const { pathname, search, hash } = useLocation()
+  const navigate = useNavigate()
+  // Open state lives in the URL hash (its own history entry): the phone's Back button closes the chat instead of
+  // leaving the app, and going to another page drops the hash so the chat never reopens there by itself.
+  // A hash-only change doesn't re-run route loaders.
+  const open = hash === '#ai'
+  const setOpen = (next: boolean) => {
+    if (next && !open) navigate({ pathname, search, hash: 'ai' })
+    // Opened from a link/reload with #ai as the first entry: going back would leave the app, so just drop the hash.
+    else if (!next && open) {
+      if (window.history.state?.idx > 0) navigate(-1)
+      else navigate({ pathname, search }, { replace: true })
+    }
+  }
   const isDesktop = useIsDesktop()
   const context = pageContextFor(pathname, search)
   if (!context) return null
@@ -32,7 +43,7 @@ export function PageAssistant() {
         <SheetContent
           side={isDesktop ? 'right' : 'bottom'}
           showCloseButton={false}
-          className="flex h-[85dvh] flex-col gap-0 p-0 pb-[env(safe-area-inset-bottom)] max-lg:rounded-t-2xl lg:h-full lg:max-w-md"
+          className="flex flex-col data-[side=bottom]:h-[85dvh] gap-0 p-0 pb-[env(safe-area-inset-bottom)] max-lg:rounded-t-2xl lg:h-full lg:max-w-md"
         >
           <SheetHeader className="sr-only">
             <SheetTitle>Hỏi AI về trang {context.label}</SheetTitle>
